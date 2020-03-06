@@ -5,18 +5,26 @@ namespace Compilers
 {
 	public class Parser
 	{
+		/* Parse Errors */
 		private class ParseError : SystemException { }	
+		/* List of tokens to read */
 		private readonly List<Token> _tokens;
+		/* Position of the current token we are reading */
 		private int _current;
 
+		/**
+		 * Constructor of the Parser
+		 * Params : list of tokens returned by the scanner
+		 */
 		public Parser(List<Token> tokens)
 		{
 			_tokens = tokens;
 		}
 
 		/**
-		 * Main function of the parser
-		 * It returns the list of statements and checks if all lines end in semicolon
+		 * Main function of the parser : it adds all the statements
+		 * to the list of statements and checks the ; after them
+		 * Return : list of all the statements 
 		 */
 		public List<Stmt> Parse()
 		{
@@ -34,8 +42,10 @@ namespace Compilers
 
 
 		/** 
-		 * Checks if the current token is any of the given types valid for the rule
-		 * and advances to the next token
+		 * Function Match : checks if the current token is any of the given 
+		 * types valid for the rule and advances to the next token
+		 * Param : kinds of tokens to check
+		 * Return : true if the tokenkinds match, otherwise false
 		 */
 		private bool Match (params TokenKind[] kinds)
 		{ 
@@ -52,7 +62,9 @@ namespace Compilers
 		}
 
 		/**
-		 * Checks if the current token is the desired token withoud advancing
+		 * Function Chech : checks if the current token is the desired tokenkind withoud advancing
+		 * Param : type of tokenkind we want to match
+		 * Return : true if the tokenkinds match, otherwise false
 		 */
 		private bool Check(TokenKind type)
 		{
@@ -61,7 +73,8 @@ namespace Compilers
 		}
 
 		/**
-		 * Advance to the next token
+		 * Function Advance : increases _current for the next token
+		 * Return : previous token
 		 */
 		private Token Advance()
 		{
@@ -70,7 +83,8 @@ namespace Compilers
 		}
 
 		/**
-		 * Checks if we have run out of tokens to parse 
+		 * Function IsAtEnd : Checks if we have run out of tokens to parse 
+		 * Return : true if we do not have more tokens, otherwis false
 		 */
 		private bool IsAtEnd()
 		{
@@ -78,7 +92,8 @@ namespace Compilers
 		}
 
 		/**
-		 * Returns the current token to parse
+		 * Function Peek
+		 * Return : the current token to parse
 		 */
 		private Token Peek()
 		{
@@ -86,7 +101,8 @@ namespace Compilers
 		}
 
 		/**
-		 * Returns the previous token to the currently one
+		 * Function Previous
+		 * Return : the previous token to the currently one
 		 */
 		private Token Previous()
 		{
@@ -95,8 +111,9 @@ namespace Compilers
 
 
 		/**
-		 * It returns the statement with respect to the token we are matching
+		 * Function Statement : it matches all the valid statements and call them
 		 * Valid for Print, Var, Identifier, For, Read, Assert
+		 * Return : the statement with respect to the token we are matching
 		 */
 		private Stmt Statement()
 		{
@@ -108,8 +125,11 @@ namespace Compilers
 				else if (Match(TokenKind.For)) return ForStatement();
 				else if (Match(TokenKind.Read)) return ReadStatement();
 				else if (Match(TokenKind.Assert)) return AssertStatement();
+				else
+					throw Error(Peek(), "Not valid statement.");
 			}
 			
+			/* In case we handle one Parse Error we synchronize and return null */
 			catch (ParseError)
 			{
 				Synchronize();
@@ -120,7 +140,7 @@ namespace Compilers
 
 		/**
 		 * Print Statement
-		 * It returns the print statement with the expression to print
+		 * Return : print statement with the expression to print
 		 */
 		private Stmt PrintStatement()
 		{
@@ -130,7 +150,7 @@ namespace Compilers
 
 		/**
 		 * Assert Statement
-		 * It returns the assert statement with the expression to evaluate
+		 * Return : assert statement with the expression to evaluate
 		 */
 		private Stmt AssertStatement()
 		{
@@ -279,7 +299,7 @@ namespace Compilers
 			if (Match(TokenKind.Identifier))
 			{
 				Token name = Previous();
-				return new Expr.Assign(name, null);
+				return new Expr.Ident(name, null);
 			}
 
 			// Grouping expression for values inside brackets

@@ -5,7 +5,18 @@ namespace Compilers
 {
 	public class Interpreter : Expr.IVisitor<Object>, Stmt.IVisitor<Object>
 	{
+		/**
+		 * SymbleTable for storing all the declared variables
+		 *		String name : name of the variable
+		 *		Stmt.Var : var statements which stores the name, value and type of the variable
+		 */
 		private Dictionary<string, Stmt.Var> SymbleTable = new Dictionary<string, Stmt.Var>();
+
+		/**
+		 * Main Function of the class
+		 * It executes all the statements of the parameter
+		 * It catches the Runtime Errors
+		 */
 		public void Interpret(List<Stmt> statements)
 		{
 			try
@@ -19,16 +30,27 @@ namespace Compilers
 			}
 		}
 
+		/**
+		 * It calls all the accepts in the visitor pattern for the statements
+		 */
 		private void Execute(Stmt stmt)
 		{
 			stmt.Accept(this);
 		}
 
+		/**
+		 * Function for Expression Statement
+		 * It evaluates the given expression as a parameter
+		 */
 		public Object VisitExpressionStmt(Stmt.Expression stmt)
 		{
 			return Evaluate(stmt.Expr);	
 		}
 
+		/**
+		 * Function for Print Statement --> "print" <expr>
+		 * It evaluates the expression and prints it in the command line
+		 */
 		public Object VisitPrintStmt(Stmt.Print stmt)
 		{
 			Object value = Evaluate(stmt.Expr);
@@ -36,17 +58,18 @@ namespace Compilers
 			return null;
 		}
 
+		/**
+		 * Function for Var Statement --> "var" <var_ident> ":" <type> [ ":=" <expr> ]
+		 * It adds the new variable to the SymbleTable
+		 * If it already exists throws an error
+		 */
 		public Object VisitVarStmt(Stmt.Var stmt)
 		{
 			String name = stmt.Name.Text;
 			if (SymbleTable.ContainsKey(name))
-			{
 				throw new RuntimeError(stmt.Name, "This variable already exists.");
-			}
 			else
-			{
 				SymbleTable.Add(name, stmt);
-			}
 
 			return null;
 
@@ -57,26 +80,56 @@ namespace Compilers
 			throw new NotImplementedException();
 		}
 
+		/**
+		 * Function for Assert Statement --> "assert" "(" <expr> ")"
+		 * It evaluates the expression and prints it in the command line
+		 */
 		public Object VisitAssertStmt(Stmt.Assert stmt)
 		{
-			return Evaluate(stmt.Expr);
+			bool value = (bool)Evaluate(stmt.Expr);
+			Console.Write(value.ToString());
+			return null;
 		}
 
+		/**
+		 * Function for Assign Statement --> <var_ident> := <expr>
+		 * It updates the value of the identifier in the SymbleTable
+		 * Throws an error if the variable was not previous declarated
+		 */
 		public Object VisitAssignStmt(Stmt.Assign stmt)
 		{
-			throw new NotImplementedException();
+			String name = stmt.Name.Text;
+			
+			// If the var is already in the table we change its value;
+			if (SymbleTable.ContainsKey(name))
+			{				
+				if (stmt.Name.Kind == SymbleTable[name].Type)
+					SymbleTable[name].Initializer = stmt.Value;
+				else
+					throw new RuntimeError(stmt.Name, "Expected " + SymbleTable[name].Type.ToString() 
+													   + " but found " + stmt.Name.Kind.ToString());
+			}
+			// Otherwise it was not declarated before so it is an error
+			else
+				throw new RuntimeError(stmt.Name, "This variable does not exist.");
+
+			return null;
 		}
 
+		/**
+		 * Function for For Statement --> "for" <var_ident> "in" <expr> ".." <expr> "do" <stmts> "end" "for"
+		 */
 		public Object VisitForStmt(Stmt.For stmt)
 		{
 			throw new NotImplementedException();
 		}
 
-		public object VisitAssignExpr(Expr.Assign expr)
+		public object VisitIdentExpr(Expr.Ident expr)
 		{
 			String name = expr.Name.Text;
 			if (SymbleTable.ContainsKey(name))
-				return SymbleTable[name].Initializer;
+				return Evaluate(SymbleTable[name].Initializer);
+			else
 			throw new RuntimeError(expr.Name, "Not declared variable.");
 		}
 

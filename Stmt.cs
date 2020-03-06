@@ -123,7 +123,7 @@ namespace Compilers
             }
 
             public Token Name { get; }
-            public Expr Initializer { get; }
+            public Expr Initializer { get; set;  }
             public TokenKind Type { get; }
             public override R Accept<R>(IVisitor<R> visitor)
             {

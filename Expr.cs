@@ -7,7 +7,7 @@ namespace Compilers
     {
         public interface IVisitor<R>
         {
-            R VisitAssignExpr(Assign expr);
+            R VisitIdentExpr(Ident expr);
             R VisitBinaryExpr(Binary expr);
             R VisitGroupingExpr(Grouping expr);
             R VisitLiteralExpr(Literal expr);
@@ -85,9 +85,9 @@ namespace Compilers
             }
         }
 
-        public class Assign : Expr
+        public class Ident : Expr
         {
-            public Assign(Token name, Expr value)
+            public Ident(Token name, Expr value)
             {
                 Name = name;
                 Value = value;
@@ -97,7 +97,7 @@ namespace Compilers
             public Expr Value { get; }
             public override R Accept<R>(IVisitor<R> visitor)
             {
-                return visitor.VisitAssignExpr(this);
+                return visitor.VisitIdentExpr(this);
             }
         }
 

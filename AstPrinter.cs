@@ -47,7 +47,7 @@ namespace Compilers
             return parenthesize(expr.OperatorToken.Text, expr.Right);
         }
 
-        public string VisitAssignExpr(Expr.Assign expr)
+        public string VisitIdentExpr(Expr.Ident expr)
         {
             throw new NotImplementedException();
         }
