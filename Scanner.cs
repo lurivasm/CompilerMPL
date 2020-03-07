@@ -209,10 +209,19 @@ namespace Compilers
 		 */
 		private void Strings()
 		{
+			int check_pos = 0;
+			bool activate = false;
+			String text;
+
 			while (NextCurrent != '"' && !IsAtEnd())
 			{
 				/* Multiline strings support */
 				if (NextCurrent == '\n') line++;
+				else if (Current == '\\' && NextCurrent == 'n')
+				{
+					activate = true;
+					check_pos = _position - start;
+				}
 				Next();
 			}
 
@@ -223,10 +232,14 @@ namespace Compilers
 				return;
 			}
 
-			/* The closing " */
+			/* The closing " and add it as a token */
 			Next();
 			var length = _position - start;
-			String text = _text.Substring(start + 1, length - 1);
+			if (activate)
+				text = _text.Substring(start + 1, check_pos - 1) + "\n" +
+					   _text.Substring(start + check_pos + 2, length - check_pos - 2);
+			else
+				text = _text.Substring(start + 1, length - 1);
 			AddToken(TokenKind.StringValue, text);
 		}
 

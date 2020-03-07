@@ -56,6 +56,7 @@ namespace Compilers
 
                 Interpreter.Interpret(stmts);
             }
+            
             Environment.Exit((int)ExitCodes.Success);
         }
 
