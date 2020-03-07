@@ -1,7 +1,12 @@
-var Y : int;
-var X : int;
-for Y in 1... X*5 do
-print Y;
-assert (Y < 5);
-Y := 3;
-end for;
+print "Give a number";
+ var n : int;
+ read n;
+ var v : int := 1;
+ var i : int;
+ hola
+ for i in 1..n do
+ v := v * i;
+ end for;
+ print "The result is: ";
+ print v; 
+

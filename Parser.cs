@@ -31,11 +31,20 @@ namespace Compilers
 			List<Stmt> statements = new List<Stmt>();
 			while (!IsAtEnd())
 			{
-				statements.Add(Statement());
-				Consume(TokenKind.Semicolon, "Expect ';' after statement.");
+				try
+				{
+					statements.Add(Statement());
+					Consume(TokenKind.Semicolon, "Expect ';' after statement.");
+				}
+				catch (ParseError)
+				{
+					Synchronize();
+				}
 			}
 
 			return statements;
+			/* In case we handle one Parse Error we synchronize and return null */
+			
 		}
 
 		
@@ -117,25 +126,15 @@ namespace Compilers
 		 */
 		private Stmt Statement()
 		{
-			try
-			{
-				if (Match(TokenKind.Print)) return PrintStatement(Previous());
-				else if (Match(TokenKind.Var)) return VarDeclStatement();
-				else if (Match(TokenKind.Identifier)) return AssignStatement();
-				else if (Match(TokenKind.For)) return ForStatement();
-				else if (Match(TokenKind.Read)) return ReadStatement();
-				else if (Match(TokenKind.Assert)) return AssertStatement(Previous());
-				else
-					throw Error(Peek(), "Not valid statement.");
-			}
-			
-			/* In case we handle one Parse Error we synchronize and return null */
-			catch (ParseError)
-			{
-				Synchronize();
-				return null;
-			}
-				
+			if (Match(TokenKind.Print)) return PrintStatement();
+			else if (Match(TokenKind.Var)) return VarDeclStatement();
+			else if (Match(TokenKind.Identifier)) return AssignStatement();
+			else if (Match(TokenKind.For)) return ForStatement();
+			else if (Match(TokenKind.Read)) return ReadStatement();
+			else if (Match(TokenKind.Assert)) return AssertStatement();
+			else
+				throw Error(Peek(), "Not valid statement.");				
+
 		}
 
 		/**
@@ -327,7 +326,7 @@ namespace Compilers
 		{
 			if (Check(kind)) return Advance();
 			else
-				throw Error(Peek(), message);	
+				throw Error(Previous(), message);	
 		}
 
 		/**

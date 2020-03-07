@@ -67,6 +67,7 @@ namespace Compilers
                 //if (hadRuntimeError) Environment.Exit((int)ExitCodes.RuntimeError);
 
             }
+            
             Environment.Exit((int)ExitCodes.Success);
         }
 
