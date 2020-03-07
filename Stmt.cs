@@ -35,12 +35,17 @@ namespace Compilers
 
         public class Print : Stmt
         {
-            public Print(Expr expr)
+            public Print(Token printToken, Expr expr)
             {
+                
                 Expr = expr;
+                PrintToken = printToken;
+
             }
 
             public Expr Expr { get; }
+
+            public Token PrintToken { get; }
             public override R Accept<R>(IVisitor<R> visitor)
             {
                 return visitor.VisitPrintStmt(this);
@@ -70,12 +75,15 @@ namespace Compilers
 
         public class Assert : Stmt
         {
-            public Assert(Expr expr)
+            public Assert(Token assertToken, Expr expr)
             {
+                AssertToken = assertToken;
                 Expr = expr;
             }
 
             public Expr Expr { get; }
+            
+            public Token AssertToken { get; }
             public override R Accept<R>(IVisitor<R> visitor)
             {
                 return visitor.VisitAssertStmt(this);

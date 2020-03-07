@@ -119,12 +119,12 @@ namespace Compilers
 		{
 			try
 			{
-				if (Match(TokenKind.Print)) return PrintStatement();
+				if (Match(TokenKind.Print)) return PrintStatement(Previous());
 				else if (Match(TokenKind.Var)) return VarDeclStatement();
 				else if (Match(TokenKind.Identifier)) return AssignStatement();
 				else if (Match(TokenKind.For)) return ForStatement();
 				else if (Match(TokenKind.Read)) return ReadStatement();
-				else if (Match(TokenKind.Assert)) return AssertStatement();
+				else if (Match(TokenKind.Assert)) return AssertStatement(Previous());
 				else
 					throw Error(Peek(), "Not valid statement.");
 			}
@@ -142,23 +142,23 @@ namespace Compilers
 		 * Print Statement
 		 * Return : print statement with the expression to print
 		 */
-		private Stmt PrintStatement()
+		private Stmt PrintStatement(Token readtoken)
 		{
 			Expr value = Expression();
-			return new Stmt.Print(value);
+			return new Stmt.Print(readtoken, value);
 		}
 
 		/**
 		 * Assert Statement
 		 * Return : assert statement with the expression to evaluate
 		 */
-		private Stmt AssertStatement()
+		private Stmt AssertStatement(Token assertToken)
 		{
 			if (Match(TokenKind.Leftparent))
 			{
 				Expr expr = Expression();
 				Consume(TokenKind.Rightparent, "Expect ')' after Assert expression.");
-				return new Stmt.Assert(expr);
+				return new Stmt.Assert(assertToken, expr);
 			}
 			throw Error(Peek(), "Expect expression after Assert statement.");
 		}
