@@ -126,12 +126,12 @@ namespace Compilers
 		 */
 		private Stmt Statement()
 		{
-			if (Match(TokenKind.Print)) return PrintStatement();
+			if (Match(TokenKind.Print)) return PrintStatement(Previous());
 			else if (Match(TokenKind.Var)) return VarDeclStatement();
 			else if (Match(TokenKind.Identifier)) return AssignStatement();
 			else if (Match(TokenKind.For)) return ForStatement();
 			else if (Match(TokenKind.Read)) return ReadStatement();
-			else if (Match(TokenKind.Assert)) return AssertStatement();
+			else if (Match(TokenKind.Assert)) return AssertStatement(Previous());
 			else
 				throw Error(Peek(), "Not valid statement.");				
 
