@@ -293,7 +293,11 @@ namespace Compilers
 		private Expr Opnd()
 		{
 			// Literal expression for number expressions or strings
-			if (Match(TokenKind.IntValue, TokenKind.StringValue)) return new Expr.Literal(Previous().Value);
+			//if (Match(TokenKind.IntValue, TokenKind.StringValue)) return new Expr.Literal(Previous().Value);
+			if (Match(TokenKind.IntValue))
+				return new Expr.Literal(new Value(VALTYPE.INT, Previous().Value));
+			if (Match(TokenKind.StringValue))
+				return new Expr.Literal(new Value(VALTYPE.STRING, Previous().Value));
 
 			// Identifiers
 			if (Match(TokenKind.Identifier))

@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace Compilers
 {
-	public class Interpreter : Expr.IVisitor<Object>, Stmt.IVisitor<Object>
+	public class Interpreter : Expr.IVisitor<Value>, Stmt.IVisitor<Object>
 	{
 		/**
 		 * SymbleTable for storing all the declared variables
 		 *		String name : name of the variable
 		 *		Stmt.Var : var statements which stores the name, value and type of the variable
 		 */
-		private Dictionary<string, Stmt.Var> SymbleTable = new Dictionary<string, Stmt.Var>();
+		private Dictionary<string, Value> SymbleTable = new Dictionary<string, Value>();
 
 		/**
 		 * Main Function of the class
@@ -42,7 +42,7 @@ namespace Compilers
 		 * Function for Expression Statement
 		 * It evaluates the given expression as a parameter
 		 */
-		public Object VisitExpressionStmt(Stmt.Expression stmt)
+		public object VisitExpressionStmt(Stmt.Expression stmt)
 		{
 			return Evaluate(stmt.Expr);	
 		}
@@ -69,7 +69,7 @@ namespace Compilers
 			if (SymbleTable.ContainsKey(name))
 				throw new RuntimeError(stmt.Name, "This variable already exists.");
 			else
-				SymbleTable.Add(name, stmt);
+				SymbleTable.Add(name, Evaluate(stmt.Initializer));
 
 			return null;
 
@@ -86,8 +86,15 @@ namespace Compilers
 		 */
 		public Object VisitAssertStmt(Stmt.Assert stmt)
 		{
-			bool value = (bool)Evaluate(stmt.Expr);
-			Console.Write(value.ToString());
+			bool value = (bool)Evaluate(stmt.Expr).Val;
+			Value right = Evaluate(stmt.Expr);
+			if (right.Type.Equals(VALTYPE.BOOL)){ //unnecessary because the type system has checked this already
+				if (!(bool)right.Val) 
+				{
+					Console.WriteLine("Assert failed:\t Expr: " + stmt.Expr.ToString() + " is false."); //TODO
+				}
+			}
+
 			return null;
 		}
 
@@ -102,12 +109,13 @@ namespace Compilers
 			
 			// If the var is already in the table we change its value;
 			if (SymbleTable.ContainsKey(name))
-			{				
-				if (stmt.Name.Kind == SymbleTable[name].Type)
-					SymbleTable[name].Initializer = stmt.Value;
+			{
+				Value val = Evaluate(stmt.Value);
+				if (val.Type.Equals(SymbleTable[name].Type))
+					SymbleTable[name] = val;
 				else
-					throw new RuntimeError(stmt.Name, "Expected " + SymbleTable[name].Type.ToString() 
-													   + " but found " + stmt.Name.Kind.ToString());
+					throw new RuntimeError(stmt.Name, "Expected " + SymbleTable[name].Type.ToString()
+													   + " but found " + val.Type.ToString());
 			}
 			// Otherwise it was not declarated before so it is an error
 			else
@@ -124,86 +132,116 @@ namespace Compilers
 			throw new NotImplementedException();
 		}
 
-		public object VisitIdentExpr(Expr.Ident expr)
+		public Value VisitIdentExpr(Expr.Ident expr)
 		{
 			String name = expr.Name.Text;
 			if (SymbleTable.ContainsKey(name))
-				return Evaluate(SymbleTable[name].Initializer);
+				return (SymbleTable[name]);
 			else
 			throw new RuntimeError(expr.Name, "Not declared variable.");
 		}
 
-		public object VisitBinaryExpr(Expr.Binary expr)
+		public Value VisitBinaryExpr(Expr.Binary expr)
 		{
-			Object left = Evaluate(expr.Left);
-			Object right = Evaluate(expr.Right);
+			Value left = Evaluate(expr.Left);
+			Value right = Evaluate(expr.Right);
 
 			switch (expr.OperatorToken.Kind)
 			{
 				case TokenKind.Minus:
 					CheckNumberOperand(expr.OperatorToken, left, right);
-					return (int)left - (int)right;
+					return new Value(VALTYPE.INT, (int)left.Val - (int)right.Val);
 				case TokenKind.Mult:
 					CheckNumberOperand(expr.OperatorToken, left, right);
-					return (int)left * (int)right;
+					return new Value(VALTYPE.INT, (int)left.Val * (int)right.Val);
 				case TokenKind.Div:
 					CheckNumberOperand(expr.OperatorToken, left, right);
-					return (int)left / (int)right;
+					return new Value(VALTYPE.INT, (int)left.Val / (int)right.Val);
 				case TokenKind.Sum:
-					if (left is int && right is int)
-						return (int)left + (int)right;
-					else if (left is string && right is string)
-						return (string)left + (string)right;
+					if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT))
+						return new Value(VALTYPE.INT, (int)left.Val + (int)right.Val);
+					else if (left.Type.Equals(VALTYPE.STRING) && right.Type.Equals(VALTYPE.STRING))
+						return new Value(VALTYPE.STRING, (string)left.Val + (string)right.Val);
 					break;
 				case TokenKind.Equal:
 					CheckNumberOperand(expr.OperatorToken, left, right);
-					return ((int)left == (int)right);
+					return new Value(VALTYPE.BOOL, ((int)left.Val == (int)right.Val));
 				case TokenKind.Less:
 					CheckNumberOperand(expr.OperatorToken, left, right);
-					return ((int)left < (int)right);
+					return new Value(VALTYPE.BOOL, ((int)left.Val < (int)right.Val));
+
 			}
 
 			throw new RuntimeError(expr.OperatorToken, "Operands must be two numbers or two strings.");
 		}
 
-		public object VisitGroupingExpr(Expr.Grouping expr)
+		public Value VisitGroupingExpr(Expr.Grouping expr)
 		{
 			return Evaluate(expr.Expression);
 		}
 
-		public object VisitLiteralExpr(Expr.Literal expr)
+		public Value VisitLiteralExpr(Expr.Literal expr)
 		{
 			return expr.Value;
 		}
 
-		public object VisitLogicalExpr(Expr.Logical expr)
+		public Value VisitLogicalExpr(Expr.Logical expr)
 		{
-			Object left = Evaluate(expr.Left);
-			if (!IsTruth(left)) return left;
-			return Evaluate(expr.Right);
+			if (expr.OperatorToken.Kind.Equals(TokenKind.And))
+			{
+				Value left = Evaluate(expr.Left);
+
+				if (left.Type.Equals(VALTYPE.BOOL))
+				{
+					if (!(bool)left.Val)
+						return left;
+					Value right = Evaluate(expr.Right);
+					if (right.Type.Equals(VALTYPE.BOOL))
+					{
+						return right;
+					}
+					else
+					{
+						throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the rightoperand of and '&&'.");
+					}
+
+				}
+				else
+				{
+					throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the leftoperand of and '&&'.");
+				}
+			}
+			else
+			{
+				throw new RuntimeError(expr.OperatorToken, "Got a logical operator that is not '&&'.");
+			}
+
 		}
 
-		public object VisitUnaryExpr(Expr.Unary expr)
+		public Value VisitUnaryExpr(Expr.Unary expr)
 		{
-			Object right = Evaluate(expr.Right);
+			Value right = Evaluate(expr.Right);
 			if (expr.OperatorToken.Kind == TokenKind.Not)
-				return !IsTruth(right);
+				if (right.Type.Equals(VALTYPE.BOOL))
+					return new Value(VALTYPE.BOOL, !((bool)right.Val));
+				else
+					throw new RuntimeError(expr.OperatorToken, "Trying to negate a non bool value");
 
 			return null;
 		}
 
-		private Object Evaluate(Expr expr)
+		private Value Evaluate(Expr expr)
 		{
 			return expr.Accept(this);
 		}
 
-		private bool IsTruth(Object obj)
-		{
-			if (obj == null) return false;
-			if (obj is bool) return (bool)obj;
+		//private bool IsTruth(Object obj)
+		//{
+		//	if (obj == null) return false;
+		//	if (obj is bool) return (bool)obj;
 
-			return true;
-		}
+		//	return true;
+		//}
 
 
 		private void CheckNumberOperand(Token op, Object left, Object right)

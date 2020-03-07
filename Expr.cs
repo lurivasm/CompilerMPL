@@ -55,12 +55,12 @@ namespace Compilers
 
           public class Literal : Expr
         {
-            public Literal(Object value)
+            public Literal(Value value)
             {
                 Value = value;
             }
 
-            public Object Value { get; }
+            public Value Value { get; }
             public override R Accept<R>(IVisitor<R> visitor)
             {
                 return visitor.VisitLiteralExpr(this);
