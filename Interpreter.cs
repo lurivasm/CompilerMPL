@@ -21,6 +21,7 @@ namespace Compilers
 		{
 			try
 			{
+				printer = new AstPrinter(SymbleTable);
 				foreach (Stmt stmt in statements)
 					Execute(stmt);
 			} 
@@ -29,6 +30,13 @@ namespace Compilers
 				Program.RuntimeError(error);
 			}
 		}
+
+		/**
+		 * Used for printing purposes
+		 */
+
+		private AstPrinter printer;
+
 
 		/**
 		 * It calls all the accepts in the visitor pattern for the statements
@@ -91,7 +99,7 @@ namespace Compilers
 			if (right.Type.Equals(VALTYPE.BOOL)){ //unnecessary because the type system has checked this already
 				if (!(bool)right.Val) 
 				{
-					Console.WriteLine("Assert failed:\t Expr: " + stmt.Expr.ToString() + " is false."); //TODO
+					Console.WriteLine("Assert failed:\t Expr: " + printer.print(stmt.Expr) + " is false."); //TODO
 				}
 			}
 
@@ -244,9 +252,9 @@ namespace Compilers
 		//}
 
 
-		private void CheckNumberOperand(Token op, Object left, Object right)
+		private void CheckNumberOperand(Token op, Value left, Value right)
 		{
-			if (left is int && right is int) return;
+			if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT)) return;
 			throw new RuntimeError(op, "Operands must be numbers.");
 		}
 

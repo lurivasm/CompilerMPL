@@ -1,10 +1,24 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Compilers
 {
     class AstPrinter : Expr.IVisitor<String>
     {
+
+        public AstPrinter(Dictionary<string, Value> environment)
+        {
+            Environment = environment;
+        }
+
+        public AstPrinter()
+        {
+            Environment = null;
+        }
+
+        private Dictionary<string, Value> Environment { get; }
+
         public String print(Expr expr)
         {
             return expr.Accept(this);
@@ -27,19 +41,19 @@ namespace Compilers
 
         public String VisitBinaryExpr(Expr.Binary expr)
         {
-            return parenthesize(expr.OperatorToken.Text, expr.Left, expr.Right);
+            return print(expr.Left) + " " + expr.OperatorToken.Text + " " + print(expr.Right);
         }
 
         
         public String VisitGroupingExpr(Expr.Grouping expr)
         {
-            return parenthesize("group", expr.Expression);
+            return "(" + print(expr) + ")";
         }
 
         public String VisitLiteralExpr(Expr.Literal expr)
         {
             if (expr.Value == null) return "nil";
-            return expr.Value.ToString();
+            return expr.Value.Val.ToString();
         }
 
         public String VisitUnaryExpr(Expr.Unary expr)
@@ -49,12 +63,19 @@ namespace Compilers
 
         public string VisitIdentExpr(Expr.Ident expr)
         {
-            throw new NotImplementedException();
+            if (Environment == null)
+            {
+                return expr.Name.Text;
+            } else
+            {
+                return expr.Name.Text + "(=" + Environment[expr.Name.Text].Val.ToString() + ")";
+            }
+            
         }
 
         public string VisitLogicalExpr(Expr.Logical expr)
         {
-            throw new NotImplementedException();
+            return print(expr.Left) + " " + expr.OperatorToken.Text + " " + print(expr.Right);
         }
     }
 
