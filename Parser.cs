@@ -36,7 +36,7 @@ namespace Compilers
 				try
 				{
 					statements.Add(Statement());
-					Consume(TokenKind.Semicolon, "Expect ';' after statement.");
+					Consume(TokenKind.Semicolon, "Expected ';' after statement.");
 				}
 				/* In case we handle one Parse Error we synchronize and return null */
 				catch (ParseError)
@@ -169,10 +169,10 @@ namespace Compilers
 			if (Match(TokenKind.Leftparent))
 			{
 				Expr expr = Expression();
-				Consume(TokenKind.Rightparent, "Expect ')' after Assert expression.");
+				Consume(TokenKind.Rightparent, "Expected ')' after Assert expression.");
 				return new Stmt.Assert(assertToken, expr);
 			}
-			throw Error(Peek(), "Expect '(' before Assert expression.");
+			throw Error(Peek(), "Expected '(' before Assert expression.");
 		}
 
 		/**
@@ -182,7 +182,7 @@ namespace Compilers
 		 */
 		private Stmt ReadStatement()
 		{
-			Consume(TokenKind.Identifier, "Expect identifier after read statement.");
+			Consume(TokenKind.Identifier, "Expected identifier after read statement.");
 			Token token = Previous();
 			return new Stmt.Read(token);
 		}
@@ -242,7 +242,7 @@ namespace Compilers
 			while (Peek().Kind != TokenKind.End && !IsAtEnd())
 			{
 				statements.Add(Statement());
-				Consume(TokenKind.Semicolon, "Expect ';' after statement.");
+				Consume(TokenKind.Semicolon, "Expected ';' after statement.");
 			}
 
 			return statements;
@@ -256,8 +256,8 @@ namespace Compilers
 		 */
 		private Stmt VarDeclStatement()
 		{
-			Token name = Consume(TokenKind.Identifier, "Expected a identifier after 'var'.");
-			Consume(TokenKind.Colon, "Expect ':' in var statement.");
+			Token name = Consume(TokenKind.Identifier, "Expected identifier after 'var'.");
+			Consume(TokenKind.Colon, "Expected ':' in var statement.");
 			
 			if (Match(TokenKind.Int, TokenKind.String, TokenKind.Bool))
 			{
@@ -265,26 +265,18 @@ namespace Compilers
 				Expr value = null;
 
 				/* Case we initialize the variable we check if there is  := and update the value */
-				if (Next().Kind == TokenKind.IntValue || Peek().Kind == TokenKind.IntValue)
+				if (Match(TokenKind.Assign))
 				{
-					if (Match(TokenKind.Assign))
-					{
-						value = Expression();
-						return new Stmt.Var(name, value, type.Kind);
-					}
-					else
-						throw Error(Peek(), "Expected := after the type.");
+					value = Expression();
+					return new Stmt.Var(name, value, type.Kind);
 				}
-				/* Case we do not initialize the token because it is a semicolon */
 				else if (Peek().Kind == TokenKind.Semicolon)
 					return new Stmt.Var(name, value, type.Kind);
-
-				/* No value when we are assigning one with := */
 				else
-					throw Error(Peek(), "Expected value for the assign in var statement.");
+					throw Error(Peek(), "Expected ';' or ':=' in the var statement.");
 			}
 
-			throw Error(Peek(), "Expect type (int, string or bool) in var statement.");
+			throw Error(Peek(), "Expected type (int, string or bool) in var statement.");
 
 
 		}
@@ -356,11 +348,11 @@ namespace Compilers
 			if (Match(TokenKind.Leftparent))
 			{
 				Expr expr = Expression();
-				Consume(TokenKind.Rightparent, "Expect ')' after expression.");
+				Consume(TokenKind.Rightparent, "Expected ')' after expression.");
 				return new Expr.Grouping(expr);
 			}
 
-			throw Error(Peek(), "Expect expression.");
+			throw Error(Peek(), "Expected expression.");
 		}
 
 

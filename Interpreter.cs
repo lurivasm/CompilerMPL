@@ -62,7 +62,7 @@ namespace Compilers
 		public Object VisitPrintStmt(Stmt.Print stmt)
 		{
 			Value value = Evaluate(stmt.Expr);
-			Console.Write(value.Val.ToString());
+			Console.WriteLine(value.Val.ToString());
 			return null;
 		}
 

@@ -98,6 +98,11 @@ namespace Compilers
 			return _position >= _text.Length - 1;
 		}
 
+		private bool IsAtEndNext()
+		{
+			return _position >= _text.Length - 2;
+		}
+
 		/**
 		 * Function Next
 		 * It increases the variable _position for the next char
@@ -149,16 +154,26 @@ namespace Compilers
 
 				/* Assigments or just colons */
 				case ':':
-					if (Match('=')) { AddToken(TokenKind.Assign); break; }
+					if (NextCurrent == '=') { Next(); AddToken(TokenKind.Assign); break; }
 					else AddToken(TokenKind.Colon); break;
 
 				case '/':
 					/* Singleline Comments goes until the end of the line */
-					if (Match('/'))
+					if (NextCurrent == '/')
 						while (Current != '\n' && !IsAtEnd()) Next();
 					/* Multiline comments goes until we discover the next or is the EOF */
-					else if (Match('*'))
-						while (Current != '*' && Match('/') && !IsAtEnd()) Next();
+					else if (NextCurrent == '*')
+					{
+						Next(); Next();
+
+						while (Current != '*' && NextCurrent != '/' && !IsAtEndNext())
+							Next();
+
+						if (IsAtEndNext()) 
+							Program.Error(line, "Never ending comment, no found */.");
+						Next();
+					}
+						
 					/* Otherwise it is a division */
 					else
 						AddToken(TokenKind.Div);
@@ -209,19 +224,10 @@ namespace Compilers
 		 */
 		private void Strings()
 		{
-			int check_pos = 0;
-			bool activate = false;
-			String text;
-
 			while (NextCurrent != '"' && !IsAtEnd())
 			{
 				/* Multiline strings support */
 				if (NextCurrent == '\n') line++;
-				else if (Current == '\\' && NextCurrent == 'n')
-				{
-					activate = true;
-					check_pos = _position - start;
-				}
 				Next();
 			}
 
@@ -235,11 +241,9 @@ namespace Compilers
 			/* The closing " and add it as a token */
 			Next();
 			var length = _position - start;
-			if (activate)
-				text = _text.Substring(start + 1, check_pos - 1) + "\n" +
-					   _text.Substring(start + check_pos + 2, length - check_pos - 2);
-			else
-				text = _text.Substring(start + 1, length - 1);
+			string text = _text.Substring(start + 1, length - 1);
+			/* The reader gives us an escaped \n not realzing we don't want that. */
+			text = text.Replace("\\n", "\n");
 			AddToken(TokenKind.StringValue, text);
 		}
 

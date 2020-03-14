@@ -29,7 +29,7 @@ namespace Compilers
             /* Location of the program as an argument */
             if (args.Length == 0)
             {
-                System.Console.WriteLine("Please enter the route to the program");
+                System.Console.WriteLine("Please enter the route to the program.");
                 return;
             }
 
@@ -49,6 +49,8 @@ namespace Compilers
                 Scanner scanner = new Scanner(program);
                 List<Token> tokens = scanner.ScanTokens();
 
+                foreach (Token token in tokens) Console.WriteLine(token.ToString());
+
                 Parser parser = new Parser(tokens);
                 List<Stmt> stmts = parser.Parse();
 
@@ -60,7 +62,7 @@ namespace Compilers
                 if (hadTypeError) Environment.Exit((int)ExitCodes.TypeError);
 
                 Interpreter interpreter = new Interpreter();
-                //interpreter.Interpret(stmts);
+                interpreter.Interpret(stmts);
 
                 if (hadRuntimeError) Environment.Exit((int)ExitCodes.RuntimeError);
 
@@ -128,3 +130,4 @@ namespace Compilers
         }
     }
 }
+
