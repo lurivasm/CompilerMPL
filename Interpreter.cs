@@ -34,12 +34,12 @@ namespace Compilers
 		/**
 		 * Used for printing purposes
 		 */
-
 		private AstPrinter printer;
 
 
 		/**
-		 * It calls all the accepts in the visitor pattern for the statements
+		 * Function Execute calls all the accepts in the visitor pattern for the statements
+		 * Param : stmt to accept
 		 */
 		private void Execute(Stmt stmt)
 		{
@@ -61,8 +61,8 @@ namespace Compilers
 		 */
 		public Object VisitPrintStmt(Stmt.Print stmt)
 		{
-			Object value = Evaluate(stmt.Expr);
-			Console.Write(value.ToString());
+			Value value = Evaluate(stmt.Expr);
+			Console.Write(value.Val.ToString());
 			return null;
 		}
 
@@ -74,18 +74,74 @@ namespace Compilers
 		public Object VisitVarStmt(Stmt.Var stmt)
 		{
 			String name = stmt.Name.Text;
+			VALTYPE type = ExpectedType(stmt);
+ 
 			if (SymbleTable.ContainsKey(name))
 				throw new RuntimeError(stmt.Name, "This variable already exists.");
+			else if (stmt.Initializer is null)
+				SymbleTable.Add(name, new Value(type, null));
 			else
 				SymbleTable.Add(name, Evaluate(stmt.Initializer));
 
 			return null;
-
 		}
 
+		private VALTYPE ExpectedType(Stmt.Var stmt)
+		{
+			switch (stmt.Type)
+			{
+				case TokenKind.Int: return VALTYPE.INT;
+				case TokenKind.String: return VALTYPE.STRING;
+				case TokenKind.Bool: return VALTYPE.BOOL;
+				default:
+					throw new RuntimeError(stmt.Name, "Cannot declarate " + stmt.Type.ToString() + " as a variable.");
+			}
+		}
+
+		/**
+		 * Function for Read Statements : it reads the new value for our variable
+		 * and checks both if the variable was previous declared and it has the same
+		 * type as the read value
+		 * Param : stmt with the new value for our variable
+		 */
 		public Object VisitReadStmt(Stmt.Read stmt)
 		{
-			throw new NotImplementedException();
+			/* If the variable already exists and is the proper type we update the symble table */
+			if (SymbleTable.ContainsKey(stmt.Token.Text))
+			{
+				String x = Console.ReadLine();
+				Value value = CheckReadStatement(x, stmt.Token, SymbleTable[stmt.Token.Text].Type);
+				SymbleTable[stmt.Token.Text] = value;
+				return null;
+			}
+			/* Otherwise throw an error */
+			throw new RuntimeError(stmt.Token, "Variable not previous declared.");
+		}
+
+		/**
+		 * Function CheckReadStatement : checks if the read value and the variable
+		 * has the same type (int or string)
+		 * Param : the string obj we have read
+		 *		   token of the variable to store the value
+		 *		   value expected token to have
+		 * Return : the value of the variable or an error
+		 */
+		private Value CheckReadStatement(String obj, Token token, VALTYPE value)
+		{
+			/* If the value is an int we try to parse it or throw an error */
+			if (value.Equals(VALTYPE.INT))
+			{
+				if (int.TryParse(obj, out int output) == true)
+					return new Value(VALTYPE.INT, output);
+				throw new RuntimeError(token, "Read value " + obj + " is not the proper type.");
+			}
+			/* If the value is a string just return it */
+			else if (value.Equals(VALTYPE.STRING))
+				return new Value(VALTYPE.STRING, obj);
+
+			/* We cannot read bools */
+			else
+				throw new RuntimeError(token, "Read value " + obj + " is not the proper type.");
 		}
 
 		/**
@@ -137,7 +193,16 @@ namespace Compilers
 		 */
 		public Object VisitForStmt(Stmt.For stmt)
 		{
-			throw new NotImplementedException();
+			int variable;
+			string name = stmt.Name.Text;
+			int beginvalue = (int)Evaluate(stmt.BeginValue).Val;
+			int endvalue = (int)Evaluate(stmt.EndValue).Val;
+			for (variable = beginvalue; variable <= endvalue; variable++)
+			{
+				SymbleTable[name] = new Value(VALTYPE.INT, variable);
+				Interpret(stmt.Stmts);				
+			}
+			return null;
 		}
 
 		public Value VisitIdentExpr(Expr.Ident expr)
@@ -172,12 +237,21 @@ namespace Compilers
 						return new Value(VALTYPE.STRING, (string)left.Val + (string)right.Val);
 					break;
 				case TokenKind.Equal:
-					CheckNumberOperand(expr.OperatorToken, left, right);
-					return new Value(VALTYPE.BOOL, ((int)left.Val == (int)right.Val));
+					if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT))
+						return new Value(VALTYPE.BOOL, ((int)left.Val == (int)right.Val));
+					else if (left.Type.Equals(VALTYPE.STRING) && right.Type.Equals(VALTYPE.STRING))
+						return new Value(VALTYPE.BOOL, ((string)left.Val == (string)right.Val));
+					else if (left.Type.Equals(VALTYPE.BOOL) && right.Type.Equals(VALTYPE.BOOL))
+						return new Value(VALTYPE.BOOL, ((bool)left.Val == (bool)right.Val));
+					break;
 				case TokenKind.Less:
-					CheckNumberOperand(expr.OperatorToken, left, right);
-					return new Value(VALTYPE.BOOL, ((int)left.Val < (int)right.Val));
-
+					if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT))
+						return new Value(VALTYPE.BOOL, ((int)left.Val < (int)right.Val));
+					else if (left.Type.Equals(VALTYPE.STRING) && right.Type.Equals(VALTYPE.STRING))
+						return new Value(VALTYPE.BOOL, (string.Compare((string)left.Val, (string)right.Val) == -1));
+					else if (left.Type.Equals(VALTYPE.BOOL) && right.Type.Equals(VALTYPE.BOOL))
+						return new Value(VALTYPE.BOOL, (((bool)left.Val).CompareTo((bool)right.Val) < 0));
+					break;
 			}
 
 			throw new RuntimeError(expr.OperatorToken, "Operands must be two numbers or two strings.");

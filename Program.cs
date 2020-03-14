@@ -9,13 +9,15 @@ namespace Compilers
     {
         private static Interpreter Interpreter = new Interpreter();
         static bool hadError = false;
+        static bool hadTypeError = false; 
         static bool hadRuntimeError = false;
 
         enum ExitCodes : int
         {
             Success = 0,
             SyntaxError = 1,
-            RuntimeError = 2
+            TypeError = 2,
+            RuntimeError = 3
         }
 
         static void Main(string[] args)
@@ -52,10 +54,20 @@ namespace Compilers
                 List<Stmt> stmts = parser.Parse();
 
                 if (hadError) Environment.Exit((int)ExitCodes.SyntaxError);
-                if (hadRuntimeError) Environment.Exit((int)ExitCodes.RuntimeError);
 
-                Interpreter.Interpret(stmts);
+                TypeChecker typeChecker = new TypeChecker();
+                typeChecker.CheckTypes(stmts);
+
+                if (hadTypeError) Environment.Exit((int)ExitCodes.TypeError);
+                else
+                    Console.WriteLine("No TypeErrors");
+
+                //Interpreter.Interpret(stmts);
+
+                //if (hadRuntimeError) Environment.Exit((int)ExitCodes.RuntimeError);
+
             }
+            
             Environment.Exit((int)ExitCodes.Success);
         }
 
@@ -92,6 +104,12 @@ namespace Compilers
         {
             Console.Write(error.Message + "\n(line " + error.Token.Position + ").");
             hadRuntimeError = true;
+        }
+
+        public static void TypeError(TypeError error)
+        {
+            Console.Write(error.Message + "\n (line " + error.Token.Position + ").");
+            hadTypeError = true;
         }
 
 

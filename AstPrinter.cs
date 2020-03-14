@@ -47,7 +47,7 @@ namespace Compilers
         
         public String VisitGroupingExpr(Expr.Grouping expr)
         {
-            return "(" + print(expr) + ")";
+            return "(" + print(expr.Expression) + ")";
         }
 
         public String VisitLiteralExpr(Expr.Literal expr)
