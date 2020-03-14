@@ -17,7 +17,7 @@ namespace Compilers
 		public string Text { get; }
 		public object Value { get; }
 
-		public String ToString()
+		public override String ToString()
 		{
 			return Kind + "\tText: " + Text + "\tValue: " + Value + '\n';
 		}

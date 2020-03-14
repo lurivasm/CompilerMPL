@@ -38,7 +38,7 @@ namespace Compilers
 
 
 		/**
-		 * Function Execute calls all the accepts in the visitor pattern for the statements
+		 * Function Execute : calls all the accepts in the visitor pattern for the statements
 		 * Param : stmt to accept
 		 */
 		private void Execute(Stmt stmt)
@@ -47,7 +47,7 @@ namespace Compilers
 		}
 
 		/**
-		 * Function for Expression Statement
+		 * Function Evaluate for Expression Statements
 		 * It evaluates the given expression as a parameter
 		 */
 		public object VisitExpressionStmt(Stmt.Expression stmt)
