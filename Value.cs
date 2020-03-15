@@ -2,6 +2,10 @@
 
 namespace Compilers
 {
+    /**
+     * Class Value : it stores both the value and the type 
+     * for the variables
+     */
     public class Value
     {
         public VALTYPE Type { get; }

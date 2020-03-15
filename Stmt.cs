@@ -3,11 +3,19 @@ using System.Collections.Generic;
 
 namespace Compilers
 {
+    /**
+     * Class Statement : it implements all the classes for each
+     * statement with the visitor pattern
+     */
     public abstract class Stmt
     {
+        /**
+         * Interface of the visitor pattern
+         * One function per statement
+         */
         public interface IVisitor<R>
         {
-            R VisitExpressionStmt(Expression stmt);
+            //R VisitExpressionStmt(Expression stmt);
             R VisitPrintStmt(Print stmt);
             R VisitVarStmt(Var stmt);
             R VisitReadStmt(Read stmt);
@@ -19,25 +27,34 @@ namespace Compilers
 
         }
 
-        public class Expression : Stmt
-        {
-            public Expression(Expr expr)
-            {
-                Expr = expr;
-            }
+        /**
+         * Class for the Expressions : <expr>
+         *      Expression : expression it represents
+         */
+        //public class Expression : Stmt
+        //{
+        //    public Expression(Expr expr)
+        //    {
+        //        Expr = expr;
+        //    }
 
-            public Expr Expr { get; }
-            public override R Accept<R>(IVisitor<R> visitor)
-            {
-                return visitor.VisitExpressionStmt(this);
-            }
-        }
+        //    public Expr Expr { get; }
+        //    public override R Accept<R>(IVisitor<R> visitor)
+        //    {
+        //        return visitor.VisitExpressionStmt(this);
+        //    }
+        //}
 
+        /**
+         * Class for the Print Statement : 'print' <expr>
+         *      PrintToken : token which represents 'print'
+         *      Expr : expression to print
+         */
         public class Print : Stmt
         {
             public Print(Token printToken, Expr expr)
             {
-                
+
                 Expr = expr;
                 PrintToken = printToken;
 
@@ -51,7 +68,14 @@ namespace Compilers
                 return visitor.VisitPrintStmt(this);
             }
         }
-        
+
+        /**
+         * Class for the For Statement : 'for' <var_ident> 'in' <expr> '..' <expr> 'do' <stmts> 'end' 'for'
+         *      Name : token for the variable used for counting
+         *      BeginValue : starting value of the loop
+         *      EndValue : ending value of the loop
+         *      Stmts : list of statements inside the loop
+         */
         public class For : Stmt
         {
             public For(Token name, Expr beginvalue, Expr endvalue, List<Stmt> stmts)
@@ -73,6 +97,11 @@ namespace Compilers
             }
         }
 
+        /**
+         * Class for the Assert Statement : 'assert' '(' <expr> ')'
+         *      AssertToken : token which represents 'assert'
+         *      Expr : expression to assert
+         */
         public class Assert : Stmt
         {
             public Assert(Token assertToken, Expr expr)
@@ -82,7 +111,7 @@ namespace Compilers
             }
 
             public Expr Expr { get; }
-            
+
             public Token AssertToken { get; }
             public override R Accept<R>(IVisitor<R> visitor)
             {
@@ -90,6 +119,11 @@ namespace Compilers
             }
         }
 
+        /**
+         * Class for the Assign Statement : <var_ident> ':=' <expr>
+         *      Name : token for the identifier
+         *      Expr : expression to assign to the identifier
+         */
         public class Assign : Stmt
         {
             public Assign(Token name, Expr value)
@@ -107,6 +141,10 @@ namespace Compilers
             public Token Name { get; }
         }
 
+        /**
+         * Class for the Read Statement : 'read' <var_ident>
+         *      Token : token of the identifier where store the read text
+         */
         public class Read : Stmt
         {
             public Read(Token token)
@@ -121,9 +159,15 @@ namespace Compilers
             }
         }
 
+        /**
+         * Class for the Variable Statement : 'var' <var_ident> ':' <type> [ ':=' <expr> ]
+         *      Name : token for the identifier
+         *      Type : type of the variable (int, string or bool)
+         *      Initializer : ini value for the variable (null if empty)
+         */
         public class Var : Stmt
         {
-            public Var (Token name, Expr initializer, TokenKind type)
+            public Var(Token name, Expr initializer, TokenKind type)
             {
                 Name = name;
                 Initializer = initializer;
@@ -131,13 +175,18 @@ namespace Compilers
             }
 
             public Token Name { get; }
-            public Expr Initializer { get; set;  }
+            public Expr Initializer { get; set; }
             public TokenKind Type { get; }
             public override R Accept<R>(IVisitor<R> visitor)
             {
                 return visitor.VisitVarStmt(this);
             }
         }
+
+        /**
+         * Function Accept : for accepting the statements 
+         * with the visitor pattern
+         */
         public abstract R Accept<R>(IVisitor<R> visitor);
     }
 }

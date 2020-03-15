@@ -3,122 +3,153 @@ using System.Collections.Generic;
 
 namespace Compilers
 {
-	public class Interpreter : Expr.IVisitor<Value>, Stmt.IVisitor<Object>
-	{
-		/**
+    /**
+	 * Class Interpreter : it evaluates all the statements and expressions and 
+	 * execute them, throwing errors in case of runtime errors
+	 */
+    public class Interpreter : Expr.IVisitor<Value>, Stmt.IVisitor<Object>
+    {
+        /**
 		 * SymbleTable for storing all the declared variables
 		 *		String name : name of the variable
-		 *		Stmt.Var : var statements which stores the name, value and type of the variable
+		 *		Value : class that stores the value of the expression and its type (int, bool, string)
 		 */
-		private Dictionary<string, Value> SymbleTable = new Dictionary<string, Value>();
+        private Dictionary<string, Value> SymbleTable = new Dictionary<string, Value>();
 
-		/**
-		 * Main Function of the class
-		 * It executes all the statements of the parameter
+        /**
+		 * Function Interpret : Main Function of the class
 		 * It catches the Runtime Errors
+		 * Param : all the statements to execute and evaluate
 		 */
-		public void Interpret(List<Stmt> statements)
-		{
-			try
-			{
-				printer = new AstPrinter(SymbleTable);
-				foreach (Stmt stmt in statements)
-					Execute(stmt);
-			} 
-			catch (RuntimeError error)
-			{
-				Program.RuntimeError(error);
-			}
-		}
+        public void Interpret(List<Stmt> statements)
+        {
+            try {
+                printer = new AstPrinter(SymbleTable);
+                foreach (Stmt stmt in statements) {
+                    Execute(stmt);
+                }
+            }
+            catch (RuntimeError error) {
+                Program.RuntimeError(error);
+            }
+        }
 
-		/**
-		 * Used for printing purposes
+        /**
+		 * Used for printing declared variables in the symble table
 		 */
-		private AstPrinter printer;
+        private AstPrinter printer;
 
 
-		/**
+        /**
 		 * Function Execute : calls all the accepts in the visitor pattern for the statements
 		 * Param : stmt to accept
 		 */
-		private void Execute(Stmt stmt)
-		{
-			stmt.Accept(this);
-		}
+        private void Execute(Stmt stmt)
+        {
+            stmt.Accept(this);
+        }
 
-		/**
-		 * Function Evaluate for Expression Statements
-		 * It evaluates the given expression as a parameter
+        /**
+		 * Function Evaluate : it accepts an expression in the interface
+		 * Param : expression to accept
+		 * Return : the value of the accept in the interface
 		 */
-		public object VisitExpressionStmt(Stmt.Expression stmt)
-		{
-			return Evaluate(stmt.Expr);	
-		}
+        private Value Evaluate(Expr expr)
+        {
+            return expr.Accept(this);
+        }
 
-		/**
-		 * Function for Print Statement --> "print" <expr>
+
+        /*****************************************************************
+		 *               FUNCTIONS FOR STATEMENTS                        *
+		 *****************************************************************/
+
+        /**
+		 * Function VisitExprStmt : it evaluates the Expression Statements
+		 * Param : expression to evaluate
+		 */
+        //public Object VisitExpressionStmt(Stmt.Expression stmt)
+        //{
+        //    return Evaluate(stmt.Expr);
+        //}
+
+        /**
+		 * Function VisitPrintStmt --> "print" <expr>
 		 * It evaluates the expression and prints it in the command line
+		 * Param : print statement to evaluate and print
 		 */
-		public Object VisitPrintStmt(Stmt.Print stmt)
-		{
-			Value value = Evaluate(stmt.Expr);
-			Console.WriteLine(value.Val.ToString());
-			return null;
-		}
+        public Object VisitPrintStmt(Stmt.Print stmt)
+        {
+            Value value = Evaluate(stmt.Expr);
+            Console.WriteLine(value.Val.ToString());
+            return null;
+        }
 
-		/**
-		 * Function for Var Statement --> "var" <var_ident> ":" <type> [ ":=" <expr> ]
+        /**
+		 * Function VisitVarStmt --> "var" <var_ident> ":" <type> [ ":=" <expr> ]
 		 * It adds the new variable to the SymbleTable
 		 * If it already exists throws an error
+		 * Param : var statement to evaluate
 		 */
-		public Object VisitVarStmt(Stmt.Var stmt)
-		{
-			String name = stmt.Name.Text;
-			VALTYPE type = ExpectedType(stmt);
- 
-			if (SymbleTable.ContainsKey(name))
-				throw new RuntimeError(stmt.Name, "This variable already exists.");
-			else if (stmt.Initializer is null)
-				SymbleTable.Add(name, new Value(type, null));
-			else
-				SymbleTable.Add(name, Evaluate(stmt.Initializer));
+        public Object VisitVarStmt(Stmt.Var stmt)
+        {
+            String name = stmt.Name.Text;
+            VALTYPE type = ExpectedType(stmt);
 
-			return null;
-		}
+            /* Case the variable is already in the symble table */
+            if (SymbleTable.ContainsKey(name)) {
+                throw new RuntimeError(stmt.Name, "This variable already exists.");
+            }
 
-		private VALTYPE ExpectedType(Stmt.Var stmt)
-		{
-			switch (stmt.Type)
-			{
-				case TokenKind.Int: return VALTYPE.INT;
-				case TokenKind.String: return VALTYPE.STRING;
-				case TokenKind.Bool: return VALTYPE.BOOL;
-				default:
-					throw new RuntimeError(stmt.Name, "Cannot declarate " + stmt.Type.ToString() + " as a variable.");
-			}
-		}
+            /* Case the variable is not initialized : the value is null */
+            else if (stmt.Initializer is null) {
+                SymbleTable.Add(name, new Value(type, null));
+            }
 
-		/**
-		 * Function for Read Statements : it reads the new value for our variable
+            /* Case the variable is initialized : evaluate the ini expression */
+            else {
+                SymbleTable.Add(name, Evaluate(stmt.Initializer));
+            }
+            return null;
+        }
+
+        /**
+		 * Function ExpectedType : it checks the token type of the variable (int,
+		 * string or bool) and it returns its corresponding VALTYPE.
+		 * Param : var statement to check
+		 * Return : the corresponding VALTYPE to each TokenKind or an error
+		 */
+        private VALTYPE ExpectedType(Stmt.Var stmt)
+        {
+            switch (stmt.Type) {
+                case TokenKind.Int: return VALTYPE.INT;
+                case TokenKind.String: return VALTYPE.STRING;
+                case TokenKind.Bool: return VALTYPE.BOOL;
+                default:
+                    throw new RuntimeError(stmt.Name, "Cannot declarate " + stmt.Type.ToString() + " as a variable.");
+            }
+        }
+
+        /**
+		 * Function VisitReadStmt : it reads the new value for our variable
 		 * and checks both if the variable was previous declared and it has the same
 		 * type as the read value
 		 * Param : stmt with the new value for our variable
 		 */
-		public Object VisitReadStmt(Stmt.Read stmt)
-		{
-			/* If the variable already exists and is the proper type we update the symble table */
-			if (SymbleTable.ContainsKey(stmt.Token.Text))
-			{
-				String x = Console.ReadLine();
-				Value value = CheckReadStatement(x, stmt.Token, SymbleTable[stmt.Token.Text].Type);
-				SymbleTable[stmt.Token.Text] = value;
-				return null;
-			}
-			/* Otherwise throw an error */
-			throw new RuntimeError(stmt.Token, "Variable not previous declared.");
-		}
+        public Object VisitReadStmt(Stmt.Read stmt)
+        {
+            /* If the variable already exists and it is the proper type we update the symble table */
+            if (SymbleTable.ContainsKey(stmt.Token.Text)) {
+                String x = Console.ReadLine();
+                Value value = CheckReadStatement(x, stmt.Token, SymbleTable[stmt.Token.Text].Type);
+                SymbleTable[stmt.Token.Text] = value;
+                return null;
+            }
+            /* Otherwise throw an error */
+            throw new RuntimeError(stmt.Token, "Variable not previous declared.");
+        }
 
-		/**
+        /**
 		 * Function CheckReadStatement : checks if the read value and the variable
 		 * has the same type (int or string)
 		 * Param : the string obj we have read
@@ -126,212 +157,282 @@ namespace Compilers
 		 *		   value expected token to have
 		 * Return : the value of the variable or an error
 		 */
-		private Value CheckReadStatement(String obj, Token token, VALTYPE value)
-		{
-			/* If the value is an int we try to parse it or throw an error */
-			if (value.Equals(VALTYPE.INT))
-			{
-				if (int.TryParse(obj, out int output) == true)
-					return new Value(VALTYPE.INT, output);
-				throw new RuntimeError(token, "Read value " + obj + " is not the proper type.");
-			}
-			/* If the value is a string just return it */
-			else if (value.Equals(VALTYPE.STRING))
-				return new Value(VALTYPE.STRING, obj);
+        private Value CheckReadStatement(String obj, Token token, VALTYPE value)
+        {
+            /* If the value is an int we try to parse it or throw an error */
+            if (value.Equals(VALTYPE.INT)) {
+                if (int.TryParse(obj, out int output) == true) {
+                    return new Value(VALTYPE.INT, output);
+                }
 
-			/* We cannot read bools */
-			else
-				throw new RuntimeError(token, "Read value " + obj + " is not the proper type.");
-		}
+                throw new RuntimeError(token, "Read value " + obj + " is not the proper type.");
+            }
 
-		/**
-		 * Function for Assert Statement --> "assert" "(" <expr> ")"
-		 * It evaluates the expression and prints it in the command line
+            /* If the value is a string just return it */
+            else if (value.Equals(VALTYPE.STRING)) {
+                return new Value(VALTYPE.STRING, obj);
+            }
+
+            /* We cannot read bools */
+            else {
+                throw new RuntimeError(token, "Read value " + obj + " is not the proper type.");
+            }
+        }
+
+        /**
+		 * Function VisitAssertStmt --> "assert" "(" <expr> ")"
+		 * It evaluates the expression and prints it in the command line it it is false
 		 */
-		public Object VisitAssertStmt(Stmt.Assert stmt)
-		{
-			bool value = (bool)Evaluate(stmt.Expr).Val;
-			Value right = Evaluate(stmt.Expr);
-			if (right.Type.Equals(VALTYPE.BOOL)){ //unnecessary because the type system has checked this already
-				if (!(bool)right.Val) 
-				{
-					Console.WriteLine("Assert failed:\t Expr: " + printer.print(stmt.Expr) + " is false."); //TODO
-				}
-			}
+        public Object VisitAssertStmt(Stmt.Assert stmt)
+        {
+            Value right = Evaluate(stmt.Expr);
+            if (right.Type.Equals(VALTYPE.BOOL)) {
+                if (!(bool)right.Val) {
+                    Console.WriteLine("Assert failed:\tExpr: " + printer.Print(stmt.Expr) + " is false.");
+                }
+            }
+            /* It should be unreachable, type system checks it */
+            else {
+                throw new RuntimeError(stmt.AssertToken, "Expression does not have the right type. Expected BOOL, got " + right.Type.ToString());
+            }
+            return null;
+        }
 
-			return null;
-		}
-
-		/**
-		 * Function for Assign Statement --> <var_ident> := <expr>
+        /**
+		 * Function VisitAssignStmt --> <var_ident> := <expr>
 		 * It updates the value of the identifier in the SymbleTable
 		 * Throws an error if the variable was not previous declarated
+		 * Param : assign statement to evaluate
 		 */
-		public Object VisitAssignStmt(Stmt.Assign stmt)
-		{
-			String name = stmt.Name.Text;
-			
-			// If the var is already in the table we change its value;
-			if (SymbleTable.ContainsKey(name))
-			{
-				Value val = Evaluate(stmt.Value);
-				if (val.Type.Equals(SymbleTable[name].Type))
-					SymbleTable[name] = val;
-				else
-					throw new RuntimeError(stmt.Name, "Expected " + SymbleTable[name].Type.ToString()
-													   + " but found " + val.Type.ToString());
-			}
-			// Otherwise it was not declarated before so it is an error
-			else
-				throw new RuntimeError(stmt.Name, "This variable does not exist.");
+        public Object VisitAssignStmt(Stmt.Assign stmt)
+        {
+            String name = stmt.Name.Text;
 
-			return null;
-		}
+            /* If the var is already in the table we change its value */
+            if (SymbleTable.ContainsKey(name)) {
+                Value val = Evaluate(stmt.Value);
+                if (val.Type.Equals(SymbleTable[name].Type)) {
+                    SymbleTable[name] = val;
+                }
+                /* If the expected type and the type of the new assign do not match */
+                else {
+                    throw new RuntimeError(stmt.Name, "Expected " + SymbleTable[name].Type.ToString()
+                                                       + " but found " + val.Type.ToString());
+                }
+            }
+            /* Otherwise it was not declarated before so it is an error */
+            else {
+                throw new RuntimeError(stmt.Name, "This variable does not exist.");
+            }
+            return null;
+        }
 
-		/**
-		 * Function for For Statement --> "for" <var_ident> "in" <expr> ".." <expr> "do" <stmts> "end" "for"
+        /**
+		 * Function VisitForStmt --> "for" <var_ident> "in" <expr> ".." <expr> "do" <stmts> "end" "for"
+		 * It evaluates the beginning and ending value for the variable and interpret each statement in
+		 * the list, also it updates the value of the variable used to count in the symble table
+		 * Param : for statement to evaluate
 		 */
-		public Object VisitForStmt(Stmt.For stmt)
-		{
-			int variable;
-			string name = stmt.Name.Text;
-			int beginvalue = (int)Evaluate(stmt.BeginValue).Val;
-			int endvalue = (int)Evaluate(stmt.EndValue).Val;
-			for (variable = beginvalue; variable <= endvalue; variable++)
-			{
-				SymbleTable[name] = new Value(VALTYPE.INT, variable);
-				Interpret(stmt.Stmts);				
-			}
-			return null;
-		}
+        public Object VisitForStmt(Stmt.For stmt)
+        {
+            int variable;
+            string name = stmt.Name.Text;
+            int beginvalue = (int)Evaluate(stmt.BeginValue).Val;
+            int endvalue = (int)Evaluate(stmt.EndValue).Val;
+            for (variable = beginvalue; variable <= endvalue; variable++) {
+                SymbleTable[name] = new Value(VALTYPE.INT, variable);
+                foreach (Stmt st in stmt.Stmts) {
+                    Execute(st);
+                }
+            }
+            return null;
+        }
 
-		public Value VisitIdentExpr(Expr.Ident expr)
-		{
-			String name = expr.Name.Text;
-			if (SymbleTable.ContainsKey(name))
-				return (SymbleTable[name]);
-			else
-			throw new RuntimeError(expr.Name, "Not declared variable.");
-		}
+        /*****************************************************************
+		 *               FUNCTIONS FOR EXPRESSIONS                       *
+		 *****************************************************************/
 
-		public Value VisitBinaryExpr(Expr.Binary expr)
-		{
-			Value left = Evaluate(expr.Left);
-			Value right = Evaluate(expr.Right);
+        /**
+		 * Function VisitIdentExpr : it evaluates an identifier expression
+		 * Param : identifier expression to evaluate
+		 * Return : the value of the identifier in the symble table or 
+		 *			throws an error if the var was not previous declared
+		 */
+        public Value VisitIdentExpr(Expr.Ident expr)
+        {
+            String name = expr.Name.Text;
+            if (SymbleTable.ContainsKey(name)) {
+                Value value = SymbleTable[name];
+                if (value.Val == null) {
+                    throw new RuntimeError(expr.Name, name + " is not initialized.");
+                }
+                return (SymbleTable[name]);
+            }
+            else {
+                throw new RuntimeError(expr.Name, "Not declared variable.");
+            }
+        }
 
-			switch (expr.OperatorToken.Kind)
-			{
-				case TokenKind.Minus:
-					CheckNumberOperand(expr.OperatorToken, left, right);
-					return new Value(VALTYPE.INT, (int)left.Val - (int)right.Val);
-				case TokenKind.Mult:
-					CheckNumberOperand(expr.OperatorToken, left, right);
-					return new Value(VALTYPE.INT, (int)left.Val * (int)right.Val);
-				case TokenKind.Div:
-					CheckNumberOperand(expr.OperatorToken, left, right);
-					return new Value(VALTYPE.INT, (int)left.Val / (int)right.Val);
-				case TokenKind.Sum:
-					if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT))
-						return new Value(VALTYPE.INT, (int)left.Val + (int)right.Val);
-					else if (left.Type.Equals(VALTYPE.STRING) && right.Type.Equals(VALTYPE.STRING))
-						return new Value(VALTYPE.STRING, (string)left.Val + (string)right.Val);
-					break;
-				case TokenKind.Equal:
-					if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT))
-						return new Value(VALTYPE.BOOL, ((int)left.Val == (int)right.Val));
-					else if (left.Type.Equals(VALTYPE.STRING) && right.Type.Equals(VALTYPE.STRING))
-						return new Value(VALTYPE.BOOL, ((string)left.Val == (string)right.Val));
-					else if (left.Type.Equals(VALTYPE.BOOL) && right.Type.Equals(VALTYPE.BOOL))
-						return new Value(VALTYPE.BOOL, ((bool)left.Val == (bool)right.Val));
-					break;
-				case TokenKind.Less:
-					if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT))
-						return new Value(VALTYPE.BOOL, ((int)left.Val < (int)right.Val));
-					else if (left.Type.Equals(VALTYPE.STRING) && right.Type.Equals(VALTYPE.STRING))
-						return new Value(VALTYPE.BOOL, (string.Compare((string)left.Val, (string)right.Val) == -1));
-					else if (left.Type.Equals(VALTYPE.BOOL) && right.Type.Equals(VALTYPE.BOOL))
-						return new Value(VALTYPE.BOOL, (((bool)left.Val).CompareTo((bool)right.Val) < 0));
-					break;
-			}
+        /**
+		 * Function VisitBinaryExpr : it evaluates both right and left expressions
+		 * of the binary expression, checking that both operands are the same type
+		 * and returns the value of them depending on the operator
+		 * Param : binary expression to evaluate
+		 * Return : the value of the binary expression
+		 */
+        public Value VisitBinaryExpr(Expr.Binary expr)
+        {
+            Value left = Evaluate(expr.Left);
+            Value right = Evaluate(expr.Right);
 
-			throw new RuntimeError(expr.OperatorToken, "Operands must be two numbers or two strings.");
-		}
+            switch (expr.OperatorToken.Kind) {
+                /* Case '-' for only numbers */
+                case TokenKind.Minus:
+                    CheckNumberOperand(expr.OperatorToken, left, right);
+                    return new Value(VALTYPE.INT, (int)left.Val - (int)right.Val);
 
-		public Value VisitGroupingExpr(Expr.Grouping expr)
-		{
-			return Evaluate(expr.Expression);
-		}
+                /* Case '*' for only numbers */
+                case TokenKind.Mult:
+                    CheckNumberOperand(expr.OperatorToken, left, right);
+                    return new Value(VALTYPE.INT, (int)left.Val * (int)right.Val);
 
-		public Value VisitLiteralExpr(Expr.Literal expr)
-		{
-			return expr.Value;
-		}
+                /* Case '/' for only numbers */
+                case TokenKind.Div:
+                    CheckNumberOperand(expr.OperatorToken, left, right);
+                    return new Value(VALTYPE.INT, (int)left.Val / (int)right.Val);
 
-		public Value VisitLogicalExpr(Expr.Logical expr)
-		{
-			if (expr.OperatorToken.Kind.Equals(TokenKind.And))
-			{
-				Value left = Evaluate(expr.Left);
+                /* Case '+' for both numbers and strings */
+                case TokenKind.Sum:
+                    if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT)) {
+                        return new Value(VALTYPE.INT, (int)left.Val + (int)right.Val);
+                    }
+                    else if (left.Type.Equals(VALTYPE.STRING) && right.Type.Equals(VALTYPE.STRING)) {
+                        return new Value(VALTYPE.STRING, (string)left.Val + (string)right.Val);
+                    }
+                    break;
 
-				if (left.Type.Equals(VALTYPE.BOOL))
-				{
-					if (!(bool)left.Val)
-						return left;
-					Value right = Evaluate(expr.Right);
-					if (right.Type.Equals(VALTYPE.BOOL))
-					{
-						return right;
-					}
-					else
-					{
-						throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the rightoperand of and '&&'.");
-					}
+                /* Case '=' for both numbers, strings or bools */
+                case TokenKind.Equal:
+                    if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT)) {
+                        return new Value(VALTYPE.BOOL, ((int)left.Val == (int)right.Val));
+                    }
+                    else if (left.Type.Equals(VALTYPE.STRING) && right.Type.Equals(VALTYPE.STRING)) {
+                        return new Value(VALTYPE.BOOL, ((string)left.Val == (string)right.Val));
+                    }
+                    else if (left.Type.Equals(VALTYPE.BOOL) && right.Type.Equals(VALTYPE.BOOL)) {
+                        return new Value(VALTYPE.BOOL, ((bool)left.Val == (bool)right.Val));
+                    }
+                    break;
 
-				}
-				else
-				{
-					throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the leftoperand of and '&&'.");
-				}
-			}
-			else
-			{
-				throw new RuntimeError(expr.OperatorToken, "Got a logical operator that is not '&&'.");
-			}
+                /* Case '<' for both numbers, strings or bools */
+                case TokenKind.Less:
+                    if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT)) {
+                        return new Value(VALTYPE.BOOL, ((int)left.Val < (int)right.Val));
+                    }
+                    else if (left.Type.Equals(VALTYPE.STRING) && right.Type.Equals(VALTYPE.STRING)) {
+                        return new Value(VALTYPE.BOOL, (string.Compare((string)left.Val, (string)right.Val) == -1));
+                    }
+                    else if (left.Type.Equals(VALTYPE.BOOL) && right.Type.Equals(VALTYPE.BOOL)) {
+                        return new Value(VALTYPE.BOOL, (((bool)left.Val).CompareTo((bool)right.Val) < 0));
+                    }
+                    break;
+            }
+            /* Error if the operands are different type */
+            throw new RuntimeError(expr.OperatorToken, "Operands must be the same type.");
+        }
 
-		}
+        /**
+		 * Function CheckNumberOperand : it checks if the value of the right and left
+		 * expressions are type INT, otherwise it throws an error
+		 * Param : op token of the operator
+		 *         left value of the binaryexpression
+		 *         right value of the binary expression
+		 * 
+		 */
+        private void CheckNumberOperand(Token op, Value left, Value right)
+        {
+            if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT)) return;
+            throw new RuntimeError(op, "Operands must be numbers.");
+        }
 
-		public Value VisitUnaryExpr(Expr.Unary expr)
-		{
-			Value right = Evaluate(expr.Right);
-			if (expr.OperatorToken.Kind == TokenKind.Not)
-				if (right.Type.Equals(VALTYPE.BOOL))
-					return new Value(VALTYPE.BOOL, !((bool)right.Val));
-				else
-					throw new RuntimeError(expr.OperatorToken, "Trying to negate a non bool value");
+        /**
+		 * Funciton VisitGroupingExpr --> '(' <expr> ')'
+		 * Param : grouping expression to evaluate
+		 * Return : the evaluated expression
+		 */
+        public Value VisitGroupingExpr(Expr.Grouping expr)
+        {
+            return Evaluate(expr.Expression);
+        }
 
-			return null;
-		}
+        /**
+		 * Function VisitLiteralExpr
+		 * Param : literal expression to evaluate
+		 * Return : value of the expression
+		 */
+        public Value VisitLiteralExpr(Expr.Literal expr)
+        {
+            return expr.Value;
+        }
 
-		private Value Evaluate(Expr expr)
-		{
-			return expr.Accept(this);
-		}
+        /**
+		 * Function VisitLogicalExpr
+		 * Param : logical expression to evaluate
+		 * Return : the left expression if it is already false, so the and is not valid
+		 *          or the right expression if the left is true
+		 */
+        public Value VisitLogicalExpr(Expr.Logical expr)
+        {
+            /* Check that the operator is an AND */
+            if (expr.OperatorToken.Kind.Equals(TokenKind.And)) {
+                Value left = Evaluate(expr.Left);
 
-		//private bool IsTruth(Object obj)
-		//{
-		//	if (obj == null) return false;
-		//	if (obj is bool) return (bool)obj;
+                /* If the left operand is BOOL */
+                if (left.Type.Equals(VALTYPE.BOOL)) {
+                    if (!(bool)left.Val) {
+                        return left;
+                    }
+                    Value right = Evaluate(expr.Right);
 
-		//	return true;
-		//}
+                    /* Check that the right expression is BOOL and return it */
+                    if (right.Type.Equals(VALTYPE.BOOL)) {
+                        return right;
+                    }
+                    /* If the right operand is not BOOL */
+                    else {
+                        throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the rightoperand of and '&&'.");
+                    }
+                }
+                /* If the left operand is not BOOL */
+                else {
+                    throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the leftoperand of and '&&'.");
+                }
+            }
+            /* If the operator token is not AND */
+            else {
+                throw new RuntimeError(expr.OperatorToken, "Got a logical operator that is not '&'.");
+            }
+        }
 
-
-		private void CheckNumberOperand(Token op, Value left, Value right)
-		{
-			if (left.Type.Equals(VALTYPE.INT) && right.Type.Equals(VALTYPE.INT)) return;
-			throw new RuntimeError(op, "Operands must be numbers.");
-		}
-
-		
-	}
+        /**
+		 * Function VisitUnaryExpr
+		 * Param : unary expression to evaluate
+		 * Return : the negated value of the right operand or error
+		 */
+        public Value VisitUnaryExpr(Expr.Unary expr)
+        {
+            Value right = Evaluate(expr.Right);
+            /* If the operator is NOT and the right operand is BOOL */
+            if (expr.OperatorToken.Kind == TokenKind.Not) {
+                if (right.Type.Equals(VALTYPE.BOOL)) {
+                    return new Value(VALTYPE.BOOL, !((bool)right.Val));
+                }
+                /* If the right operand is not BOOL throw an error */
+                else {
+                    throw new RuntimeError(expr.OperatorToken, "Trying to negate a non bool value");
+                }
+            }
+            return null;
+        }
+    }
 }

@@ -12,7 +12,7 @@ namespace Compilers
     {
         /* Errors for the parser, semantic analysis and interpreter */
         static bool hadSyntaxError = false;
-        static bool hadTypeError = false; 
+        static bool hadTypeError = false;
         static bool hadRuntimeError = false;
         /* Enumeration for the codes of the exit depending on the errors */
         enum ExitCodes : int
@@ -27,25 +27,21 @@ namespace Compilers
         {
             string program = "";
             /* Location of the program as an argument */
-            if (args.Length == 0)
-            {
+            if (args.Length == 0) {
                 System.Console.WriteLine("Please enter the route to the program.");
                 return;
             }
 
             /* Read all the program line by line and store it in "program" */
-            using (StreamReader reader = new StreamReader(args[0]))
-            {
+            using (StreamReader reader = new StreamReader(args[0])) {
                 string line;
-                while ((line = reader.ReadLine()) != null)
-                {
+                while ((line = reader.ReadLine()) != null) {
                     program += line + "\n";
                 }
             }
 
             /* Scanner, parser, semantic analysis and interpreter */
-            if (program != null)
-            {
+            if (program != null) {
                 Scanner scanner = new Scanner(program);
                 List<Token> tokens = scanner.ScanTokens();
 
@@ -67,7 +63,7 @@ namespace Compilers
                 if (hadRuntimeError) Environment.Exit((int)ExitCodes.RuntimeError);
 
             }
-            
+
             Environment.Exit((int)ExitCodes.Success);
         }
 
@@ -91,10 +87,12 @@ namespace Compilers
          */
         public static void Error(Token token, String message)
         {
-            if (token.Kind == TokenKind.EndOfFile)
+            if (token.Kind == TokenKind.EndOfFile) {
                 Report(token.Position, " at end", message);
-            else
+            }
+            else {
                 Report(token.Position, " at '" + token.Text + "'", message);
+            }
         }
 
         /**
@@ -103,7 +101,7 @@ namespace Compilers
          */
         public static void RuntimeError(RuntimeError error)
         {
-            Console.Write(error.Message + "\n(line " + error.Token.Position + ").");
+            Console.WriteLine("[line " + error.Token.Position + "] " + error.Message + ".");
             hadRuntimeError = true;
         }
 

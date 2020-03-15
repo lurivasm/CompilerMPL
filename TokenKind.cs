@@ -2,61 +2,52 @@
 
 namespace Compilers
 {
-	public enum TokenKind
-	{
-		ErrorToken,
-		BinaryToken,
-		NotKeyDiccionary,
+    /**
+	 * Enumeration TokenKind 
+	 * It has all the kind of tokens we can have
+	 */
+    public enum TokenKind
+    {
+        EndOfFile,
 
-		newline,
-		Whitespace,
-		EndOfFile,
+        // One or two character tokens
+        Dotdot,
+        Colon,
+        Semicolon,
+        Leftparent,
+        Rightparent,
+        Assign,
 
-		Comment_start,
-		Comment_end,
-		Comment,
+        /* One charanter tokens */
+        Sum,
+        Minus,
+        Mult,
+        Div,
+        Less,
+        Equal,
+        And,
+        Not,
 
-		// One or two character tokens
-		Dotdot,
-		Colon,
-		Semicolon,
-		Leftparent,
-		Rightparent,
-		Assign,
+        /* Literals */
+        Int,
+        String,
+        Bool,
+        Identifier,
 
-		// One charanter tokens
-		Sum,
-		Minus,
-		Mult,
-		Div,
-		Less,
-		Equal,
-		And,
-		Not,
+        /* Values */
+        IntValue,
+        StringValue,
+        BoolValue,
 
-		ttrue,
-		ffalse,
-
-		// Literals
-		Int,
-		String,
-		Bool,
-		Identifier,
-
-		IntValue,
-		StringValue,
-		BoolValue,
-
-		// Reserved Words
-		Read,
-		Print,
-		Assert,
-		For,
-		Do,
-		End,
-		In,
-		Var
-
-	}
+        /* Reserved Words */
+        Read,
+        Print,
+        Assert,
+        For,
+        Do,
+        End,
+        In,
+        Var
+    }
 }
 

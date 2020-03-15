@@ -3,8 +3,16 @@ using System.Collections.Generic;
 
 namespace Compilers
 {
+    /**
+     * Class Expr : it implements all the classes for each expression
+     * with the visitor pattern
+     */
     public abstract class Expr
     {
+        /**
+         * Interface of the visitor pattern
+         * One function per expression
+         */
         public interface IVisitor<R>
         {
             R VisitIdentExpr(Ident expr);
@@ -13,11 +21,14 @@ namespace Compilers
             R VisitLiteralExpr(Literal expr);
             R VisitLogicalExpr(Logical expr);
             R VisitUnaryExpr(Unary expr);
-            //R visitVariableExpr(Variable expr);
         }
 
-        
-
+        /**
+         * Class for the binary expressions : <left> <operator> <right>
+         *      Left : left operand of the expression
+         *      OperatorToken : +, -, *, /, <, =
+         *      Right : right operand of the expression
+         */
         public class Binary : Expr
         {
             public Binary(Expr left, Token op, Expr right)
@@ -37,7 +48,12 @@ namespace Compilers
             }
         }
 
-          public class Unary : Expr
+        /**
+         * Class for the unary expressions : <operator> <right>
+         *      OperatorToken : ! (not)
+         *      Right : right operand of the expression
+         */
+        public class Unary : Expr
         {
             public Unary(Token op, Expr right)
             {
@@ -53,7 +69,11 @@ namespace Compilers
             }
         }
 
-          public class Literal : Expr
+        /**
+         * Class for the literal expressions 
+         *      Value : value of the evaluated expression
+         */
+        public class Literal : Expr
         {
             public Literal(Value value)
             {
@@ -67,6 +87,12 @@ namespace Compilers
             }
         }
 
+        /**
+         * Class for the logical expressions : <left> <operator> <right>
+         *      Left : left operand of the expression
+         *      OperatorToken : & (and)
+         *      Right : right operand of the expression
+         */
         public class Logical : Expr
         {
             public Logical(Expr left, Token op, Expr right)
@@ -85,6 +111,11 @@ namespace Compilers
             }
         }
 
+        /**
+         * Class for the identifiers expressions
+         *      Name : name of the identifier
+         *      Value : value of the identifier
+         */
         public class Ident : Expr
         {
             public Ident(Token name, Expr value)
@@ -101,6 +132,10 @@ namespace Compilers
             }
         }
 
+        /**
+         * Class for the grouping expressions : '(' <expr> ')'
+         *      Expression : expression inside the brackets
+         */
         public class Grouping : Expr
         {
             public Grouping(Expr expression)
@@ -115,6 +150,9 @@ namespace Compilers
             }
         }
 
+        /**
+         * Function Accept : function for accepting the expressions
+         */
         public abstract R Accept<R>(IVisitor<R> visitor);
     }
 }
