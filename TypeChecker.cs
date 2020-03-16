@@ -110,91 +110,115 @@ namespace Compilers
         public object VisitAssertStmt(Stmt.Assert stmt)
         {
             VALTYPE right = GetType(stmt.Expr);
-            if (right.Equals(VALTYPE.BOOL))
+            if (right.Equals(VALTYPE.BOOL)) {
                 return null;
-            else
+            }
+            else {
                 throw new TypeError(stmt.AssertToken, "Asserts can only be done on boolean, got " + right.ToString() + " instead.");
+            }
         }
 
         /**
          * Function VisitAssignStmt : it checks that the variable and the assignment
          * has the same type. Also it throws an error if we try to assign a new value
-         * for the loopcounter inside the loop or if the type is wrong
+         * for the loop counter inside the loop or if the type is wrong
          * Param : assign statement to check
          */
         public object VisitAssignStmt(Stmt.Assign stmt)
         {
-            /* Error when trying to assign to the loopcounter inside the loop */
-            if (illegalAssignments.Contains(stmt.Name.Text))
-                throw new TypeError(stmt.Name, "Cannot assign to " + stmt.Name.Text + " in a for loop where it is used as a loopcounter.");
-
+            /* Error when trying to assign to the loop counter inside the loop */
+            if (illegalAssignments.Contains(stmt.Name.Text)) {
+                throw new TypeError(stmt.Name, "Cannot assign to " + stmt.Name.Text + " in a for loop where it is used as a loop counter.");
+            }
             /* Check that the var and the assigment have same type */
             VALTYPE right = GetType(stmt.Value);
-            if (right.Equals(SymbleTypeTable[stmt.Name.Text]))
+            if (right.Equals(SymbleTypeTable[stmt.Name.Text])) {
                 return null;
-            else
+            }
+            else {
                 throw new TypeError(stmt.Name, stmt.Name.Text + " has type " + SymbleTypeTable[stmt.Name.Text] + " but was tried to assign type: " + right.ToString());
+            }
         }
 
         /**
-         * Function VisitForStatement : 
+         * Function VisitForStatement : it adds the variable used as a loop counter
+         * to the illegalAssigments list and checks that the begin and end value
+         * are of type INT. Otherwise it throws an error.
          * Param : for statement to check
          */
         public object VisitForStmt(Stmt.For stmt)
         {
             /* Error when trying to use the var of the main loop in a loop inside it */
             if (illegalAssignments.Contains(stmt.Name.Text)) {
-                throw new TypeError(stmt.Name, "Cannot use " + stmt.Name.Text + " as a loop counter since it is already in use as a loop counter.");
+                throw new TypeError(stmt.Name, "Cannot use '" + stmt.Name.Text + "' as a loop counter since it is already in use as a loop counter.");
             }
 
-            /* Add the loopcounter to the illegalAssigments list */
+            /* Add the loop counter to the illegalAssigments list */
             illegalAssignments.Add(stmt.Name.Text);
             VALTYPE begin = GetType(stmt.BeginValue);
             VALTYPE end = GetType(stmt.EndValue);
 
-            /* If the begin and end value are INT we check the types of the inside statements */
-            if (begin.Equals(VALTYPE.INT) && end.Equals(VALTYPE.INT)) {
-                CheckTypes(stmt.Stmts);
-                illegalAssignments.Remove(stmt.Name.Text);
-                return null;
-            }
-            /* The begin or the end value were not INT type */
-            else {
-                throw new TypeError(stmt.Name, "The begin and end expression should be " + VALTYPE.INT.ToString() + ", got " + begin.ToString() + " and " + end.ToString() + " instead."); // TODO change to FOR token
-            }
+            if (SymbleTypeTable.ContainsKey(stmt.Name.Text)) {
 
+                VALTYPE loopcounter = SymbleTypeTable[stmt.Name.Text];
+
+                /* The loop counter must be an INT */
+                if (loopcounter.Equals(VALTYPE.INT)) {
+                    /* If the begin and end value are INT we check the types of the inside statements */
+                    if (begin.Equals(VALTYPE.INT) && end.Equals(VALTYPE.INT)) {
+                        CheckTypes(stmt.Stmts);
+                        illegalAssignments.Remove(stmt.Name.Text);
+                        return null;
+                    }
+                    /* The begin or the end value were not INT type */
+                    else {
+                        throw new TypeError(stmt.ForToken, "The begin and end expression should be " + VALTYPE.INT.ToString()
+                                                       + ", got " + begin.ToString() + " and " + end.ToString() + " instead."); 
+                    }
+                }
+                /* Error if the loop counter is not an INT */
+                else {
+                    throw new TypeError(stmt.ForToken, "The loop counter '" + stmt.Name.Text + "' should be " + VALTYPE.INT.ToString()
+                                                   + ", got " + loopcounter.ToString() + " instead.");
+                }
+            }
+            else {
+                throw new TypeError(stmt.ForToken, "The loop counter '" + stmt.Name.Text + "' is not previous declared");
+            }
         }
 
         /**
-         * Function VisitExpressionStatement :
-         */
-        //public object VisitExpressionStmt(Stmt.Expression stmt)
-        //{
-        //    return GetType(stmt.Expr); //TODO clean up, never reached
-        //}
-
-        /**
-         * Function VisitPrintStmt : it never fails
+         * Function VisitPrintStmt : it checks that we print INT or
+         * STRING but never BOOL
          * Param : print statement to check
          */
         public object VisitPrintStmt(Stmt.Print stmt)
         {
-            return null;
+            VALTYPE value = GetType(stmt.Expr);
+            /* Only correct with INT and STRING */
+            if (value.Equals(VALTYPE.INT) || value.Equals(VALTYPE.STRING)) {
+                return null;
+            }
+            throw new TypeError(stmt.PrintToken, "Prints can only be done on " + VALTYPE.INT.ToString() + " or "
+                                                 + VALTYPE.STRING.ToString() + ", got " + value.ToString() + " instead.");
         }
 
         /**
-         * Function VisitReadStatement :
+         * Function VisitReadStatement : it checks that the variable we are reading
+         * already exists and it is not the loop counter inside a loop
          * Param : read statement to check
          */
         public object VisitReadStmt(Stmt.Read stmt)
         {
             /* Error if the variable was not previous declared */
-            if (!SymbleTypeTable.ContainsKey(stmt.Token.Text))
+            if (!SymbleTypeTable.ContainsKey(stmt.Token.Text)) {
                 throw new TypeError(stmt.Token, "Cannot read to a variable before it was declared.");
+            }
 
-            /* Error if we try to read the loopcounter inside the loop */
-            if (illegalAssignments.Contains(stmt.Token.Text))
-                throw new TypeError(stmt.Token, "Cannot assign to " + stmt.Token.Text + " in a for loop where it is used as a loopcounter.");
+            /* Error if we try to read the loop counter inside the loop */
+            if (illegalAssignments.Contains(stmt.Token.Text)) {
+                throw new TypeError(stmt.Token, "Cannot assign to " + stmt.Token.Text + " in a for loop where it is used as a loop counter.");
+            }
             return null;
         }
 
@@ -226,21 +250,22 @@ namespace Compilers
             /* Case the binary operator is '=' or '<' */
             if (matching.Contains(expr.OperatorToken.Kind)) {
                 /* If left and right are the same type return BOOL */
-                if (left.Equals(right))
+                if (left.Equals(right)) {
                     return VALTYPE.BOOL;
-
+                }
                 /* Error not same type */
-                else
+                else {
                     throw new TypeError(expr.OperatorToken, "'" + expr.OperatorToken.Text
                                         + "' arguments should have the same type.");
+                }
             }
 
             /* Case the binary operator is '-', '*' or '/' */
             else if (numbers.Contains(expr.OperatorToken.Kind)) {
                 /* Case left and right are both INT */
-                if (left.Equals(right) && left.Equals(VALTYPE.INT))
+                if (left.Equals(right) && left.Equals(VALTYPE.INT)) {
                     return VALTYPE.INT;
-
+                }
                 /* Error not same type*/
                 else {
                     throw new TypeError(expr.OperatorToken, "'" + expr.OperatorToken.Text
@@ -290,7 +315,7 @@ namespace Compilers
          * Function VisitIdentExpr : it checks if the variable exists in 
          * the table (previous declared) and returns its value.
          * Otherwise it throws an error cause it was not declared
-         * Param : identifier expression
+         * Param : identifier expression to check
          * Return : the type of the identifier
          */
         public VALTYPE VisitIdentExpr(Expr.Ident expr)
@@ -303,39 +328,64 @@ namespace Compilers
             }
         }
 
-
+        /**
+         * Function VisitLiteralExpr
+         * Param : literal expression to ckeck
+         * Return : type of the value of the literal expression
+         */
         public VALTYPE VisitLiteralExpr(Expr.Literal expr)
         {
             return expr.Value.Type;
         }
 
+        /**
+         * Function VisitLogicalExpr : it checks that right and
+         * left expressions are the same type
+         * Param : logical expression to check
+         * Return : type of the logical expression
+         */
         public VALTYPE VisitLogicalExpr(Expr.Logical expr)
         {
             VALTYPE left = GetType(expr.Left);
             VALTYPE right = GetType(expr.Right);
 
-            if (left.Equals(right)) {
+            /* If left and right are the same type */
+            if (left.Equals(right) && left.Equals(VALTYPE.BOOL)) {
                 return left;
             }
-
+            /* Error if left and right are not the same type */
             else {
                 throw new TypeError(expr.OperatorToken, "'" + expr.OperatorToken.Text
-                                     + "' expects two expression of the same type, but it got "
+                                     + "' expects two BOOL expressions, but it got "
                                     + left.ToString() + " and " + right.ToString());
             }
         }
 
-
+        /**
+         * Function VisitUnaryExpr : checks that the operator is NOT and
+         * that the right expression is BOOL. Otherwise throws an error
+         * Param : unary expression to ckeck
+         * Return : the type of the unary expression
+         */
         public VALTYPE VisitUnaryExpr(Expr.Unary expr)
         {
             VALTYPE right = GetType(expr.Right);
-            if (expr.OperatorToken.Kind == TokenKind.Not)
-                if (right.Equals(VALTYPE.BOOL))
+
+            /* If the operator is NOT and the right expr is BOOL */
+            if (expr.OperatorToken.Kind == TokenKind.Not) {
+                if (right.Equals(VALTYPE.BOOL)) {
                     return right;
-                else
-                    throw new TypeError(expr.OperatorToken, "Expected a BOOL, got " + right.ToString() + " instead.");
-            else
+                }
+                /* Error if right expr is not BOOL */
+                else {
+                    throw new TypeError(expr.OperatorToken, "'" + expr.OperatorToken.Text
+                                     + "' expects a BOOL expression, got " + right.ToString() + " instead.");
+                }
+            }
+            /* Single operand */
+            else {
                 return right;
+            }
         }
 
 

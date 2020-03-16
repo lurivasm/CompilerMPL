@@ -24,6 +24,10 @@ namespace Compilers
         public void Interpret(List<Stmt> statements)
         {
             try {
+                if (statements.Count == 0) {
+                    Token token = new Token(TokenKind.EndOfFile, 1, "", null);
+                    throw new RuntimeError(token, "Empty program, at least one valid statement.");
+                }
                 printer = new AstPrinter(SymbleTable);
                 foreach (Stmt stmt in statements) {
                     Execute(stmt);
@@ -65,15 +69,6 @@ namespace Compilers
 		 *****************************************************************/
 
         /**
-		 * Function VisitExprStmt : it evaluates the Expression Statements
-		 * Param : expression to evaluate
-		 */
-        //public Object VisitExpressionStmt(Stmt.Expression stmt)
-        //{
-        //    return Evaluate(stmt.Expr);
-        //}
-
-        /**
 		 * Function VisitPrintStmt --> "print" <expr>
 		 * It evaluates the expression and prints it in the command line
 		 * Param : print statement to evaluate and print
@@ -81,7 +76,7 @@ namespace Compilers
         public Object VisitPrintStmt(Stmt.Print stmt)
         {
             Value value = Evaluate(stmt.Expr);
-            Console.WriteLine(value.Val.ToString());
+            Console.Write(value.Val.ToString());
             return null;
         }
 
@@ -222,7 +217,7 @@ namespace Compilers
             }
             /* Otherwise it was not declarated before so it is an error */
             else {
-                throw new RuntimeError(stmt.Name, "This variable does not exist.");
+                throw new RuntimeError(stmt.Name, "This variable does not exist. Not prevoius declared.");
             }
             return null;
         }
@@ -231,6 +226,7 @@ namespace Compilers
 		 * Function VisitForStmt --> "for" <var_ident> "in" <expr> ".." <expr> "do" <stmts> "end" "for"
 		 * It evaluates the beginning and ending value for the variable and interpret each statement in
 		 * the list, also it updates the value of the variable used to count in the symble table
+         * Also it checks that the loop has at least one statement
 		 * Param : for statement to evaluate
 		 */
         public Object VisitForStmt(Stmt.For stmt)
@@ -239,6 +235,12 @@ namespace Compilers
             string name = stmt.Name.Text;
             int beginvalue = (int)Evaluate(stmt.BeginValue).Val;
             int endvalue = (int)Evaluate(stmt.EndValue).Val;
+
+            /* At least one statement */
+            if (stmt.Stmts.Count == 0) {
+                throw new RuntimeError(stmt.Name, "For loop must have at least one statement.");
+            }
+            /* Executing all the statements */
             for (variable = beginvalue; variable <= endvalue; variable++) {
                 SymbleTable[name] = new Value(VALTYPE.INT, variable);
                 foreach (Stmt st in stmt.Stmts) {
@@ -251,27 +253,6 @@ namespace Compilers
         /*****************************************************************
 		 *               FUNCTIONS FOR EXPRESSIONS                       *
 		 *****************************************************************/
-
-        /**
-		 * Function VisitIdentExpr : it evaluates an identifier expression
-		 * Param : identifier expression to evaluate
-		 * Return : the value of the identifier in the symble table or 
-		 *			throws an error if the var was not previous declared
-		 */
-        public Value VisitIdentExpr(Expr.Ident expr)
-        {
-            String name = expr.Name.Text;
-            if (SymbleTable.ContainsKey(name)) {
-                Value value = SymbleTable[name];
-                if (value.Val == null) {
-                    throw new RuntimeError(expr.Name, name + " is not initialized.");
-                }
-                return (SymbleTable[name]);
-            }
-            else {
-                throw new RuntimeError(expr.Name, "Not declared variable.");
-            }
-        }
 
         /**
 		 * Function VisitBinaryExpr : it evaluates both right and left expressions
@@ -366,6 +347,27 @@ namespace Compilers
         }
 
         /**
+		 * Function VisitIdentExpr : it evaluates an identifier expression
+		 * Param : identifier expression to evaluate
+		 * Return : the value of the identifier in the symble table or 
+		 *			throws an error if the var was not previous declared
+		 */
+        public Value VisitIdentExpr(Expr.Ident expr)
+        {
+            String name = expr.Name.Text;
+            if (SymbleTable.ContainsKey(name)) {
+                Value value = SymbleTable[name];
+                if (value.Val == null) {
+                    throw new RuntimeError(expr.Name, name + " is not initialized.");
+                }
+                return (SymbleTable[name]);
+            }
+            else {
+                throw new RuntimeError(expr.Name, "Not declared variable.");
+            }
+        }
+
+        /**
 		 * Function VisitLiteralExpr
 		 * Param : literal expression to evaluate
 		 * Return : value of the expression
@@ -400,12 +402,12 @@ namespace Compilers
                     }
                     /* If the right operand is not BOOL */
                     else {
-                        throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the rightoperand of and '&&'.");
+                        throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the rightoperand of and '&'.");
                     }
                 }
                 /* If the left operand is not BOOL */
                 else {
-                    throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the leftoperand of and '&&'.");
+                    throw new RuntimeError(expr.OperatorToken, "Expected a boolean as the leftoperand of and '&'.");
                 }
             }
             /* If the operator token is not AND */

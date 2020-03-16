@@ -45,8 +45,6 @@ namespace Compilers
                 Scanner scanner = new Scanner(program);
                 List<Token> tokens = scanner.ScanTokens();
 
-                foreach (Token token in tokens) Console.WriteLine(token.ToString());
-
                 Parser parser = new Parser(tokens);
                 List<Stmt> stmts = parser.Parse();
 
@@ -61,7 +59,6 @@ namespace Compilers
                 interpreter.Interpret(stmts);
 
                 if (hadRuntimeError) Environment.Exit((int)ExitCodes.RuntimeError);
-
             }
 
             Environment.Exit((int)ExitCodes.Success);
@@ -101,7 +98,7 @@ namespace Compilers
          */
         public static void RuntimeError(RuntimeError error)
         {
-            Console.WriteLine("[line " + error.Token.Position + "] " + error.Message + ".");
+            Console.WriteLine("[line " + error.Token.Position + "] " + error.Message);
             hadRuntimeError = true;
         }
 
@@ -111,7 +108,7 @@ namespace Compilers
          */
         public static void TypeError(TypeError error)
         {
-            Console.Write(error.Message + "\n (line " + error.Token.Position + ").");
+            Console.WriteLine("(line " + error.Token.Position + ") " + error.Message);
             hadTypeError = true;
         }
 
@@ -123,7 +120,7 @@ namespace Compilers
          */
         private static void Report(int line, String where, String message)
         {
-            Console.Write("[line " + line + "] Error" + where + ": " + message + '\n');
+            Console.WriteLine("[line " + line + "] Error" + where + ": " + message);
             hadSyntaxError = true;
         }
     }

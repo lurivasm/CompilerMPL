@@ -15,7 +15,6 @@ namespace Compilers
          */
         public interface IVisitor<R>
         {
-            //R VisitExpressionStmt(Expression stmt);
             R VisitPrintStmt(Print stmt);
             R VisitVarStmt(Var stmt);
             R VisitReadStmt(Read stmt);
@@ -26,24 +25,6 @@ namespace Compilers
             R VisitForStmt(For stmt);
 
         }
-
-        /**
-         * Class for the Expressions : <expr>
-         *      Expression : expression it represents
-         */
-        //public class Expression : Stmt
-        //{
-        //    public Expression(Expr expr)
-        //    {
-        //        Expr = expr;
-        //    }
-
-        //    public Expr Expr { get; }
-        //    public override R Accept<R>(IVisitor<R> visitor)
-        //    {
-        //        return visitor.VisitExpressionStmt(this);
-        //    }
-        //}
 
         /**
          * Class for the Print Statement : 'print' <expr>
@@ -78,16 +59,18 @@ namespace Compilers
          */
         public class For : Stmt
         {
-            public For(Token name, Expr beginvalue, Expr endvalue, List<Stmt> stmts)
+            public For(Token forToken, Token name, Expr beginvalue, Expr endvalue, List<Stmt> stmts)
             {
                 Name = name;
                 BeginValue = beginvalue;
                 EndValue = endvalue;
                 Stmts = stmts;
+                ForToken = forToken;
             }
             public Token Name { get; }
             public Expr BeginValue { get; }
             public Expr EndValue { get; }
+            public Token ForToken { get; }
 
             public List<Stmt> Stmts { get; }
 

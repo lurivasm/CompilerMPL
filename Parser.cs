@@ -45,6 +45,7 @@ namespace Compilers
                     Synchronize();
                 }
             }
+            
             return statements;
         }
 
@@ -148,7 +149,6 @@ namespace Compilers
             else {
                 throw Error(Peek(), "Not valid statement.");
             }
-
         }
 
         /**
@@ -214,12 +214,13 @@ namespace Compilers
 		 */
         private Stmt ForStatement()
         {
-            if (Peek().Kind == TokenKind.Semicolon && ErrorFor) {
-                ErrorFor = false;
-                throw Error(Peek(), "Expected 'end' after statements in for loop.");
-            }
+            //if (Peek().Kind == TokenKind.Semicolon && ErrorFor) {
+            //    ErrorFor = false;
+            //    throw Error(Peek(), "Expected 'end' after statements in for loop.");
+            //}
 
             ErrorFor = true;
+            Token forToken = Previous();
             Token name = Consume(TokenKind.Identifier, "Expected identifier after 'for'.");
             Consume(TokenKind.In, "Expected 'in' after for statement");
             Expr beginvalue = Expression();
@@ -230,7 +231,7 @@ namespace Compilers
             Consume(TokenKind.End, "Expected 'end' after statements in for loop.");
             Consume(TokenKind.For, "Expected 'for' after end of for statement.");
             ErrorFor = false;
-            return new Stmt.For(name, beginvalue, endvalue, stmts);
+            return new Stmt.For(forToken, name, beginvalue, endvalue, stmts);
 
         }
 
@@ -371,18 +372,13 @@ namespace Compilers
 		 */
         private void Synchronize()
         {
-            if (ErrorFor == true) Advance();
+            Advance();
             while (!IsAtEnd()) {
                 if (Previous().Kind == TokenKind.Semicolon) return;
 
                 switch (Peek().Kind) {
                     case TokenKind.Var:
                     case TokenKind.For:
-                        if (ErrorFor == true) {
-                            Advance();
-                            continue;
-                        }
-                        return;
                     case TokenKind.Print:
                     case TokenKind.Read:
                     case TokenKind.Assert:

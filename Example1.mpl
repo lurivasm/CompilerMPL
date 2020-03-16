@@ -1,9 +1,10 @@
-var x : int;
-var t : int := 0;
-for x in 1..5 do
-
-var i : bool := 1=2;
-t := t + 1;
-end for;
-assert (t = 5);
-print t;
+var nTimes : int := 0;
+ print "How many times?";
+ read nTimes;
+ var x : int;
+ x := "hello";
+ for x in 0..nTimes-1 do
+ print x;
+ print " : Hello, World!\n";
+ end for;
+ assert (x = nTimes);

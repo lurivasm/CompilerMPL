@@ -58,13 +58,13 @@ namespace Compilers
         public List<Token> ScanTokens()
         {
             while (!IsAtEnd()) {
-                // We are at the beginning of the next word.
+                /* We are at the beginning of the next word */
                 Next();
                 start = _position;
                 NextToken();
             }
 
-            Tokens.Add(new Token(TokenKind.EndOfFile, _position, "\0", null));
+            Tokens.Add(new Token(TokenKind.EndOfFile, line, "\0", null));
             return Tokens;
         }
 
@@ -149,8 +149,11 @@ namespace Compilers
                 case '!': AddToken(TokenKind.Not); break;
                 case '=': AddToken(TokenKind.Equal); break;
                 case '<': AddToken(TokenKind.Less); break;
+                case '&': AddToken(TokenKind.And); break;
                 case '.':
-                    if (Match('.')) AddToken(TokenKind.Dotdot); break;
+                    if (Match('.')) AddToken(TokenKind.Dotdot); 
+                    else Program.Error(line, "Unexpected characters '." + Current + "' instead of '..'.");
+                    break;
 
                 /* Assigments or just colons */
                 case ':':
@@ -161,6 +164,7 @@ namespace Compilers
                     /* Singleline Comments goes until the end of the line */
                     if (NextCurrent == '/') {
                         while (Current != '\n' && !IsAtEnd()) Next();
+                        line++;
                     }
 
                     /* Multiline comments goes until we discover the next or is the EOF */
@@ -175,6 +179,7 @@ namespace Compilers
                                 /* If cont is 0 means that we have closed all the nested comments */
                                 if (cont == 0) break;
                             }
+                            else if (Current == '\n') line++;
                             /* Found nested opening comment and increase the cont */
                             else if (Current == '/' && NextCurrent == '*') cont++;
 
@@ -241,9 +246,11 @@ namespace Compilers
 		 */
         private void Strings()
         {
-            while (NextCurrent != '"' && !IsAtEnd()) {
+            Next();
+            while (Current != '"' && !IsAtEnd()) {
                 /* Multiline strings support */
                 if (NextCurrent == '\n') line++;
+                else if (Current == '\\' && NextCurrent == '"') Next();
                 Next();
             }
 
@@ -253,12 +260,15 @@ namespace Compilers
                 return;
             }
 
-            /* The closing " and add it as a token */
-            Next();
+            /* Add it as a token */
             var length = _position - start;
             string text = _text.Substring(start + 1, length - 1);
             /* The reader gives us an escaped \n not realzing we don't want that. */
             text = text.Replace("\\n", "\n");
+            text = text.Replace("\\\"", "\"");
+            text = text.Replace("\\t", "\t");
+            text = text.Replace("\\r", "\r");
+            text = text.Replace("\\\\", "\\");
             AddToken(TokenKind.StringValue, text);
         }
 
@@ -289,7 +299,7 @@ namespace Compilers
             /* If it is a reserved word we return the value */
             if (ReservedWords.ContainsKey(text)) {
                 if (!ReservedWords.TryGetValue(text, out TokenKind value)) {
-                    Program.Error(line, "Internal Error");
+                    Program.Error(line, "Internal Error"); /* Should be unreachable */
                 }
                 AddToken(value);
             }
