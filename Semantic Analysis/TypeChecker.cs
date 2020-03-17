@@ -130,13 +130,20 @@ namespace Compilers
             if (illegalAssignments.Contains(stmt.Name.Text)) {
                 throw new TypeError(stmt.Name, "Cannot assign to " + stmt.Name.Text + " in a for loop where it is used as a loop counter.");
             }
-            /* Check that the var and the assigment have same type */
-            VALTYPE right = GetType(stmt.Value);
-            if (right.Equals(SymbleTypeTable[stmt.Name.Text])) {
-                return null;
+            
+            /* Check that the var to assign already exists */
+            if (SymbleTypeTable.ContainsKey(stmt.Name.Text)) {
+                /* Check that the var and the assigment have same type */
+                VALTYPE right = GetType(stmt.Value);
+                if (right.Equals(SymbleTypeTable[stmt.Name.Text])) {
+                    return null;
+                }
+                else {
+                    throw new TypeError(stmt.Name, stmt.Name.Text + " has type " + SymbleTypeTable[stmt.Name.Text] + " but was tried to assign type: " + right.ToString());
+                }
             }
             else {
-                throw new TypeError(stmt.Name, stmt.Name.Text + " has type " + SymbleTypeTable[stmt.Name.Text] + " but was tried to assign type: " + right.ToString());
+                throw new TypeError(stmt.Name, "The var '" + stmt.Name.Text + "' does not exist. Cannot assign not pervious declared variables.");
             }
         }
 

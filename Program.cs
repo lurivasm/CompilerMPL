@@ -108,7 +108,7 @@ namespace Compilers
          */
         public static void TypeError(TypeError error)
         {
-            Console.WriteLine("(line " + error.Token.Position + ") " + error.Message);
+            Console.WriteLine("[line " + error.Token.Position + "] " + error.Message);
             hadTypeError = true;
         }
 
